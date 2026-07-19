@@ -1,0 +1,201 @@
+[
+  {
+    "id": 1,
+    "messages": [
+      {"sender": "Alice", "text": "We should go hiking this weekend."},
+      {"sender": "Bob", "text": "I'm down."},
+      {"sender": "Charlie", "text": "Saturday works for me."},
+      {"sender": "Alice", "text": "Where should we go?"}
+    ],
+    "label": {
+      "has_plan": true,
+      "plan": "Go hiking this weekend",
+      "status": "stuck"
+    }
+  },
+  {
+    "id": 2,
+    "messages": [
+      {"sender": "Mike", "text": "Dinner Friday?"},
+      {"sender": "Sarah", "text": "Sure."},
+      {"sender": "John", "text": "I'm free."},
+      {"sender": "Mike", "text": "Let's do Luigi's at 7."},
+      {"sender": "Sarah", "text": "Perfect."}
+    ],
+    "label": {
+      "has_plan": true,
+      "plan": "Have dinner at Luigi's Friday at 7",
+      "status": "completed"
+    }
+  },
+  {
+    "id": 3,
+    "messages": [
+      {"sender": "Emma", "text": "We should watch a movie sometime."},
+      {"sender": "Jake", "text": "That sounds fun."}
+    ],
+    "label": {
+      "has_plan": false,
+      "plan": null,
+      "status": "none"
+    }
+  },
+  {
+    "id": 4,
+    "messages": [
+      {"sender": "Alex", "text": "Let's go camping next month."},
+      {"sender": "Ben", "text": "I'm interested."},
+      {"sender": "Alex", "text": "Need to figure out dates."}
+    ],
+    "label": {
+      "has_plan": true,
+      "plan": "Go camping next month",
+      "status": "stuck"
+    }
+  },
+  {
+    "id": 5,
+    "messages": [
+      {"sender": "Lisa", "text": "Party at my place Saturday night."},
+      {"sender": "Tom", "text": "I'll bring snacks."},
+      {"sender": "Chris", "text": "See everyone there."}
+    ],
+    "label": {
+      "has_plan": true,
+      "plan": "Attend Lisa's party Saturday night",
+      "status": "completed"
+    }
+  },
+  {
+    "id": 6,
+    "messages": [
+      {"sender": "Ryan", "text": "We need to celebrate your birthday."},
+      {"sender": "Kate", "text": "Haha yeah we should."},
+      {"sender": "Ryan", "text": "We'll figure something out."}
+    ],
+    "label": {
+      "has_plan": false,
+      "plan": null,
+      "status": "none"
+    }
+  },
+  {
+    "id": 7,
+    "messages": [
+      {"sender": "Chris", "text": "Basketball tomorrow?"},
+      {"sender": "Dan", "text": "Yeah."},
+      {"sender": "Chris", "text": "Court at 5."},
+      {"sender": "Dan", "text": "See you then."}
+    ],
+    "label": {
+      "has_plan": true,
+      "plan": "Play basketball tomorrow at 5",
+      "status": "completed"
+    }
+  },
+  {
+    "id": 8,
+    "messages": [
+      {"sender": "Amy", "text": "Road trip this summer??"},
+      {"sender": "Joe", "text": "That would be awesome."},
+      {"sender": "Amy", "text": "We should plan it sometime."}
+    ],
+    "label": {
+      "has_plan": false,
+      "plan": null,
+      "status": "none"
+    }
+  },
+  {
+    "id": 9,
+    "messages": [
+      {"sender": "Sam", "text": "Let's ski in February."},
+      {"sender": "Alex", "text": "I'm interested."},
+      {"sender": "Sam", "text": "Need to see who else is coming."}
+    ],
+    "label": {
+      "has_plan": true,
+      "plan": "Go skiing in February",
+      "status": "stuck"
+    }
+  },
+  {
+    "id": 10,
+    "messages": [
+      {"sender": "Nina", "text": "Anyone want to grab coffee tomorrow?"},
+      {"sender": "Mark", "text": "I can after class."},
+      {"sender": "Nina", "text": "Let's meet at Blue Bottle at 3."}
+    ],
+    "label": {
+      "has_plan": true,
+      "plan": "Grab coffee tomorrow at Blue Bottle at 3",
+      "status": "active"
+    }
+  },
+  {
+    "id": 11,
+    "messages": [
+      {"sender": "Chris", "text": "We should go to the beach."},
+      {"sender": "Dan", "text": "Yeah that sounds fun."},
+      {"sender": "Chris", "text": "Maybe sometime next month."}
+    ],
+    "label": {
+      "has_plan": false,
+      "plan": null,
+      "status": "none"
+    }
+  },
+  {
+    "id": 12,
+    "messages": [
+      {"sender": "Maya", "text": "Movie night Friday?"},
+      {"sender": "Leo", "text": "I'm free."},
+      {"sender": "Maya", "text": "Cool I'll pick a movie later."}
+    ],
+    "label": {
+      "has_plan": true,
+      "plan": "Watch a movie Friday",
+      "status": "active"
+    }
+  },
+  {
+    "id": 13,
+    "messages": [
+      {"sender": "Tom", "text": "Let's play tennis this week."},
+      {"sender": "Jerry", "text": "Sure."},
+      {"sender": "Tom", "text": "What day works?"},
+      {"sender": "Jerry", "text": "I'll let you know."}
+    ],
+    "label": {
+      "has_plan": true,
+      "plan": "Play tennis this week",
+      "status": "stuck"
+    }
+  },
+  {
+    "id": 14,
+    "messages": [
+      {"sender": "Alice", "text": "Happy birthday!!"},
+      {"sender": "Bob", "text": "Thanks!"}
+    ],
+    "label": {
+      "has_plan": false,
+      "plan": null,
+      "status": "none"
+    }
+  },
+  {
+    "id": 15,
+    "messages": [
+      {"sender": "Kevin", "text": "Game night tonight?"},
+      {"sender": "Sarah", "text": "Yes."},
+      {"sender": "Kevin", "text": "Starting at 8."},
+      {"sender": "Sarah", "text": "Sounds good."}
+    ],
+    "label": {
+      "has_plan": true,
+      "plan": "Game night tonight at 8",
+      "status": "completed"
+    }
+  }
+]
