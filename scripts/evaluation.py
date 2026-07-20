@@ -1,6 +1,6 @@
 import json
 
-from conversationanalyzer import analyze_chat
+from bruhagent.analysis import PlanAnalyzer
 
 #TODO: add metric for semantic similarity between llm generated plan and reasoning and evaluation conversations
 def evaluate_prediction(prediction, expected):
@@ -25,7 +25,7 @@ def main():
     total_examples = len(dataset)
 
     for example in dataset:
-        prediction = analyze_chat(example["messages"])
+        prediction = PlanAnalyzer.analyze_chat(example["messages"])
         expected = example["label"]
 
         results = evaluate_prediction(
