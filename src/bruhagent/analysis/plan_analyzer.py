@@ -1,17 +1,11 @@
 import json
+from bruhagent.llm import client
 
-from openai import OpenAI
+class PlanAnalyzer:
 
-client = OpenAI(
-    #default address for ollama server
-    base_url="http://localhost:11434/v1",
-    api_key="bruh"
-)
+    def analyze_chat(messages, model="qwen3:8b"):
 
-
-def analyze_chat(messages):
-
-    prompt = f"""
+        prompt = f"""
 You analyze group conversations.
 
 Determine whether there is a plan and what state the plan is in.
@@ -67,24 +61,24 @@ Conversation:
 {messages}
 """
 
-    response = client.chat.completions.create(
-        model="qwen3:8b",
-        
-        #TODO: move to structured outputs: 
-        #https://developers.openai.com/api/docs/guides/structured-outputs
-        #https://ollama.com/blog/structured-outputs
-        response_format={
-            "type":"json_object"
-        },
-        messages=[
-            {
-                "role":"user",
-                "content":prompt
-            }
-        ]
-    )
+        response = client.chat.completions.create(
+            model=model,
+            
+            #TODO: move to structured outputs: 
+            #https://developers.openai.com/api/docs/guides/structured-outputs
+            #https://ollama.com/blog/structured-outputs
+            response_format={
+                "type":"json_object"
+            },
+            messages=[
+                {
+                    "role":"user",
+                    "content":prompt
+                }
+            ]
+        )
 
 
-    return json.loads(
-        response.choices[0].message.content
-    )
+        return json.loads(
+            response.choices[0].message.content
+        )
