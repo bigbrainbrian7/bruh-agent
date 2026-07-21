@@ -2,7 +2,7 @@ import json
 from datetime import datetime
 
 from bruhagent.analysis import PlanAnalyzer
-from bruhagent.database import SQLiteReader
+from bruhagent.database import ChatDBReader
 from bruhagent.models import Message
 from bruhagent.analysis import messages_to_string
 
@@ -85,7 +85,7 @@ def test_accuracy_from_sqlite_db(json_file_path: str, db_file_path: str):
     with open(json_file_path) as f:
         dataset = json.load(f)
 
-    reader = SQLiteReader(db_file_path)
+    reader = ChatDBReader(db_file_path)
     chat_ids = reader.get_chat_guids()
 
     totals = {

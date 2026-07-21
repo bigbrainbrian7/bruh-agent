@@ -3,14 +3,14 @@ from datetime import datetime
 
 from ..models import Message
 
-class SQLiteReader:
+class ChatDBReader:
     def __init__(self, db_path: str):
         self.conn = sqlite3.connect(db_path)
         self.conn.row_factory = sqlite3.Row
 
     def get_messages(
         self,
-        chat_id: str,
+        chat_id: str | None = None,
         after_message_id: int | None = None,
     ) -> list[Message]:
 
@@ -29,10 +29,13 @@ class SQLiteReader:
             ON chat.ROWID = chat_message_join.chat_id
         LEFT JOIN handle
             ON handle.ROWID = message.handle_id
-        WHERE chat.guid = ?
         """
 
-        params = [chat_id]
+        params = []
+
+        if after_message_id is not None:
+            query += " WHERE chat.guid = ?"
+            params.append(str(chat_id))
 
         if after_message_id is not None:
             query += " AND message.ROWID > ?"
@@ -59,10 +62,26 @@ class SQLiteReader:
         return messages
     
     def get_chat_guids(self, after_message_id: int | None = None) -> list[str]:
+        query = """
+        SELECT chat.guid
+        FROM chat
+        JOIN chat_message_join
+            ON chat.ROWID = chat_message_join.chat_id
+        JOIN message
+            ON message.ROWID = chat_message_join.message_id
+        """
+        params = []
 
-        # TODO: join with messages and only get chat ids that appear there
-        query = 'SELECT chat.guid FROM chat;'
+        if after_message_id is not None:
+            query += " WHERE message.ROWID > ?"
+            params.append(after_message_id)
 
-        rows = self.conn.execute(query).fetchall()
+        query += " GROUP BY chat.guid ORDER BY MIN(message.ROWID)"
+
+        rows = self.conn.execute(query, params).fetchall()
 
         return [row[0] for row in rows]
+    
+    def close(self) -> None:
+        self.conn.close()
+
