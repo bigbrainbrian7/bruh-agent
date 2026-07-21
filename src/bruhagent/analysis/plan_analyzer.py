@@ -1,10 +1,13 @@
 import json
 from bruhagent.llm import client
+from bruhagent.models import Message
+
+from .conversation import messages_to_string
 
 class PlanAnalyzer:
 
-    def analyze_chat(messages, model="qwen3:8b"):
-
+    @staticmethod
+    def analyze_chat(messages: list[Message], model="qwen3:8b"):
         prompt = f"""
 You analyze group conversations.
 
@@ -58,7 +61,7 @@ Return JSON only:
 
 Conversation:
 
-{messages}
+{messages_to_string(messages)}
 """
 
         response = client.chat.completions.create(

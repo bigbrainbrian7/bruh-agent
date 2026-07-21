@@ -57,3 +57,12 @@ class SQLiteReader:
             )
 
         return messages
+    
+    def get_chat_guids(self, after_message_id: int | None = None) -> list[str]:
+
+        # TODO: join with messages and only get chat ids that appear there
+        query = 'SELECT chat.guid FROM chat;'
+
+        rows = self.conn.execute(query).fetchall()
+
+        return [row[0] for row in rows]
