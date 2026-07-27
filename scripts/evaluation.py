@@ -25,10 +25,10 @@ def json_to_messages(json_messages: list[dict[str, str]], chat_id: str) -> list[
 def evaluate_prediction(prediction, expected):
     return {
         "has_plan": (
-            prediction.get("has_plan") == expected.get("has_plan")
+            prediction.has_plan == expected.get("has_plan")
         ),
         "status": (
-            prediction.get("status") == expected.get("status")
+            prediction.status == expected.get("status")
         )
     }
 

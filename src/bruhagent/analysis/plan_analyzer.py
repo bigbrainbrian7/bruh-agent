@@ -1,13 +1,29 @@
 import json
 from bruhagent.llm import client
-from bruhagent.models import Message
+from bruhagent.models import Message, Plan
 
 from .conversation import messages_to_string
 
 class PlanAnalyzer:
 
     @staticmethod
-    def analyze_chat(messages: list[Message], model="qwen3:8b"):
+    def analyze_chat(
+        messages: list[Message],
+        previous_messages: list[Message] | None = None,
+        previous_plan: Plan | None = None,
+        model="qwen3:8b",
+    ) -> Plan:
+        previous_plan_text = "No previous plan state is saved for this chat."
+        if previous_plan is not None:
+            previous_plan_text = f"""
+The following is the saved plan state from an earlier analysis. It may be stale;
+the conversation messages are the source of truth when they conflict.
+
+- Has plan: {previous_plan.has_plan}
+- Plan: {previous_plan.plan}
+- Status: {previous_plan.status}
+- Reason: {previous_plan.reason}
+"""
         prompt = f"""
 You analyze group conversations.
 
@@ -59,7 +75,14 @@ Return JSON only:
 "reason": string|null
 }}
 
-Conversation:
+Previous plan state:
+
+{previous_plan_text}
+
+Earlier messages for context:
+{"There are no previous messages" if not previous_messages else messages_to_string(previous_messages)}
+
+New messages since the last scan, to update or create the plan state:
 
 {messages_to_string(messages)}
 """
@@ -82,6 +105,10 @@ Conversation:
         )
 
 
-        return json.loads(
-            response.choices[0].message.content
+        analysis = json.loads(response.choices[0].message.content)
+        return Plan(
+            has_plan=analysis["has_plan"],
+            plan=analysis["plan"],
+            status=analysis["status"],
+            reason=analysis.get("reason"),
         )
