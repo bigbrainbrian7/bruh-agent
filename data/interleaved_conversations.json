@@ -1,0 +1,143 @@
+[
+  {
+    "id": "hiking-weekend",
+    "messages": [
+      {"offset_minutes": 0, "sender": "Maya", "text": "Who is up for a hike this Saturday?"},
+      {"offset_minutes": 14, "sender": "Jordan", "text": "I am in."},
+      {"offset_minutes": 31, "sender": "Priya", "text": "Me too, after 10 AM."},
+      {"offset_minutes": 48, "sender": "Maya", "text": "Cool, let us aim for 10:30."},
+      {"offset_minutes": 96, "sender": "Maya", "text": "Which trail should we choose?"},
+      {"offset_minutes": 111, "sender": "Jordan", "text": "I am fine with anything."},
+      {"offset_minutes": 138, "sender": "Priya", "text": "Same. We need someone to pick one."},
+      {"offset_minutes": 202, "sender": "Maya", "text": "I vote Lands End. Meet at the parking lot at 10:30."},
+      {"offset_minutes": 219, "sender": "Jordan", "text": "Perfect, see you Saturday."}
+    ],
+    "evaluation_points": [
+      {"through_message": 4, "label": {"has_plan": true, "plan": "Go hiking Saturday at 10:30", "status": "active"}},
+      {"through_message": 7, "label": {"has_plan": true, "plan": "Go hiking Saturday at 10:30", "status": "stuck"}},
+      {"through_message": 9, "label": {"has_plan": true, "plan": "Hike at Lands End Saturday at 10:30", "status": "completed"}}
+    ]
+  },
+  {
+    "id": "team-lunch",
+    "messages": [
+      {"offset_minutes": 6, "sender": "Noah", "text": "Should the team get lunch together on Thursday?"},
+      {"offset_minutes": 21, "sender": "Elena", "text": "Yes, I am free after noon."},
+      {"offset_minutes": 39, "sender": "Sam", "text": "I can do 12:30."},
+      {"offset_minutes": 54, "sender": "Noah", "text": "Let us do 12:30 then. Any cuisine preferences?"},
+      {"offset_minutes": 101, "sender": "Elena", "text": "Thai sounds good."},
+      {"offset_minutes": 119, "sender": "Sam", "text": "Mexican would work too."},
+      {"offset_minutes": 146, "sender": "Noah", "text": "Can someone choose a place so I can reserve it?"},
+      {"offset_minutes": 184, "sender": "Elena", "text": "Sorry, I got pulled into meetings."},
+      {"offset_minutes": 236, "sender": "Sam", "text": "Let us pick Thai Basil on 3rd."},
+      {"offset_minutes": 251, "sender": "Noah", "text": "Reserved Thai Basil for Thursday at 12:30."}
+    ],
+    "evaluation_points": [
+      {"through_message": 4, "label": {"has_plan": true, "plan": "Team lunch Thursday at 12:30", "status": "active"}},
+      {"through_message": 8, "label": {"has_plan": true, "plan": "Team lunch Thursday at 12:30", "status": "stuck"}},
+      {"through_message": 10, "label": {"has_plan": true, "plan": "Team lunch at Thai Basil Thursday at 12:30", "status": "completed"}}
+    ]
+  },
+  {
+    "id": "book-club",
+    "messages": [
+      {"offset_minutes": 9, "sender": "Ava", "text": "A book club could be fun sometime."},
+      {"offset_minutes": 27, "sender": "Leo", "text": "I would join that."},
+      {"offset_minutes": 44, "sender": "Mina", "text": "Maybe after the holidays when things calm down."},
+      {"offset_minutes": 73, "sender": "Ava", "text": "No rush, just putting it out there."},
+      {"offset_minutes": 129, "sender": "Leo", "text": "What is everyone reading lately?"},
+      {"offset_minutes": 158, "sender": "Mina", "text": "I just started Parable of the Sower."},
+      {"offset_minutes": 208, "sender": "Ava", "text": "Adding that to my list."}
+    ],
+    "evaluation_points": [
+      {"through_message": 4, "label": {"has_plan": false, "plan": null, "status": "none"}},
+      {"through_message": 7, "label": {"has_plan": true, "plan": "Meet for coffee at Blue Bottle tomorrow at 9", "status": "completed"}}
+    ]
+  },
+  {
+    "id": "game-night",
+    "messages": [
+      {"offset_minutes": 17, "sender": "Me", "is_from_me": true, "text": "Game night at my place Friday?"},
+      {"offset_minutes": 34, "sender": "Chris", "text": "Yes, I am free."},
+      {"offset_minutes": 58, "sender": "Dana", "text": "I can bring snacks."},
+      {"offset_minutes": 82, "sender": "Me", "is_from_me": true, "text": "Great. Let us start at 8."},
+      {"offset_minutes": 167, "sender": "Chris", "text": "What is your address again?"},
+      {"offset_minutes": 193, "sender": "Me", "is_from_me": true, "text": "42 Pine Street, apartment 3C."},
+      {"offset_minutes": 227, "sender": "Dana", "text": "Got it, see everyone at 8."}
+    ],
+    "evaluation_points": [
+      {"through_message": 4, "label": {"has_plan": true, "plan": "Game night Friday at 8", "status": "active"}},
+      {"through_message": 5, "label": {"has_plan": true, "plan": "Game night Friday at 8", "status": "stuck"}},
+      {"through_message": 7, "label": {"has_plan": true, "plan": "Game night Friday at 8 at 42 Pine Street", "status": "completed"}}
+    ]
+  },
+  {
+    "id": "coffee-and-movie",
+    "messages": [
+      {"offset_minutes": 24, "sender": "Riley", "text": "Coffee tomorrow morning?"},
+      {"offset_minutes": 52, "sender": "Taylor", "text": "I can do 9."},
+      {"offset_minutes": 88, "sender": "Riley", "text": "Blue Bottle at 9 works for me."},
+      {"offset_minutes": 114, "sender": "Taylor", "text": "See you there."},
+      {"offset_minutes": 173, "sender": "Riley", "text": "Also, maybe a movie next week?"},
+      {"offset_minutes": 214, "sender": "Taylor", "text": "That could be fun, we can decide later."},
+      {"offset_minutes": 244, "sender": "Riley", "text": "Sounds good."}
+    ],
+    "evaluation_points": [
+      {"through_message": 4, "label": {"has_plan": true, "plan": "Meet for coffee at Blue Bottle tomorrow at 9", "status": "completed"}},
+      {"through_message": 7, "label": {"has_plan": false, "plan": null, "status": "none"}}
+    ]
+  },
+  {
+    "id": "context-window",
+    "messages": [
+      {"offset_minutes": -16570, "sender": "Casey", "text": "OLD-01"},
+      {"offset_minutes": -15850, "sender": "Morgan", "text": "OLD-02"},
+      {"offset_minutes": -15130, "sender": "Casey", "text": "OLD-03"},
+      {"offset_minutes": -14410, "sender": "Morgan", "text": "OLD-04"},
+      {"offset_minutes": -13690, "sender": "Casey", "text": "OLD-05"},
+      {"offset_minutes": -12970, "sender": "Morgan", "text": "OLD-06"},
+      {"offset_minutes": -12250, "sender": "Casey", "text": "OLD-07"},
+      {"offset_minutes": -11530, "sender": "Morgan", "text": "OLD-08"},
+      {"offset_minutes": -10810, "sender": "Casey", "text": "OLD-09"},
+      {"offset_minutes": -10090, "sender": "Morgan", "text": "OLD-10"},
+      {"offset_minutes": -10070, "sender": "Casey", "text": "RECENT-01"},
+      {"offset_minutes": -9770, "sender": "Morgan", "text": "RECENT-02"},
+      {"offset_minutes": -9470, "sender": "Casey", "text": "RECENT-03"},
+      {"offset_minutes": -9170, "sender": "Morgan", "text": "RECENT-04"},
+      {"offset_minutes": -8870, "sender": "Casey", "text": "RECENT-05"},
+      {"offset_minutes": -8570, "sender": "Morgan", "text": "RECENT-06"},
+      {"offset_minutes": -8270, "sender": "Casey", "text": "RECENT-07"},
+      {"offset_minutes": -7970, "sender": "Morgan", "text": "RECENT-08"},
+      {"offset_minutes": -7670, "sender": "Casey", "text": "RECENT-09"},
+      {"offset_minutes": -7370, "sender": "Morgan", "text": "RECENT-10"},
+      {"offset_minutes": -7070, "sender": "Casey", "text": "RECENT-11"},
+      {"offset_minutes": -6770, "sender": "Morgan", "text": "RECENT-12"},
+      {"offset_minutes": -6470, "sender": "Casey", "text": "RECENT-13"},
+      {"offset_minutes": -6170, "sender": "Morgan", "text": "RECENT-14"},
+      {"offset_minutes": -5870, "sender": "Casey", "text": "RECENT-15"},
+      {"offset_minutes": -5570, "sender": "Morgan", "text": "RECENT-16"},
+      {"offset_minutes": -5270, "sender": "Casey", "text": "RECENT-17"},
+      {"offset_minutes": -4970, "sender": "Morgan", "text": "RECENT-18"},
+      {"offset_minutes": -4670, "sender": "Casey", "text": "RECENT-19"},
+      {"offset_minutes": -4370, "sender": "Morgan", "text": "RECENT-20"},
+      {"offset_minutes": -4070, "sender": "Casey", "text": "RECENT-21"},
+      {"offset_minutes": -3770, "sender": "Morgan", "text": "RECENT-22"},
+      {"offset_minutes": -3470, "sender": "Casey", "text": "RECENT-23"},
+      {"offset_minutes": -3170, "sender": "Morgan", "text": "RECENT-24"},
+      {"offset_minutes": -2870, "sender": "Casey", "text": "RECENT-25"},
+      {"offset_minutes": -2570, "sender": "Morgan", "text": "RECENT-26"},
+      {"offset_minutes": -2270, "sender": "Casey", "text": "RECENT-27"},
+      {"offset_minutes": -1970, "sender": "Morgan", "text": "RECENT-28"},
+      {"offset_minutes": -1670, "sender": "Casey", "text": "RECENT-29"},
+      {"offset_minutes": -1370, "sender": "Morgan", "text": "RECENT-30"},
+      {"offset_minutes": -1070, "sender": "Casey", "text": "RECENT-31"},
+      {"offset_minutes": 0, "sender": "Morgan", "text": "NEW-01: Who is driving to the cabin on Saturday?"},
+      {"offset_minutes": 5, "sender": "Casey", "text": "NEW-02: I can drive."},
+      {"offset_minutes": 10, "sender": "Morgan", "text": "NEW-03: Great, let us leave at 9."},
+      {"offset_minutes": 15, "sender": "Casey", "text": "NEW-04: Sounds good."}
+    ],
+    "evaluation_points": [
+      {"through_message": 45, "label": {"has_plan": true, "plan": "Drive to the cabin Saturday at 9 with Casey driving", "status": "completed"}}
+    ]
+  }
+]

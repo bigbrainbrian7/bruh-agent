@@ -1,6 +1,6 @@
 from collections import defaultdict
 from dataclasses import replace
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from bruhagent.database import ChatDBReader, StateStore
 from bruhagent.models import Message, Plan
@@ -46,7 +46,12 @@ class MessageProcessor:
 
         for chat_id, chat_messages in messages_by_chat.items():
             previous_plan = self.state_store.get_plan(chat_id)
-            previous_messages = self.reader.get_recent_messages(chat_id, cursor)
+            first_new_message = chat_messages[0]
+            previous_messages = self.reader.get_recent_messages(
+                chat_id,
+                before_message_id=first_new_message.id,
+                after_timestamp=first_new_message.timestamp - timedelta(days=7),
+            )
             plan = PlanAnalyzer.analyze_chat(
                 chat_messages,
                 previous_messages=previous_messages,

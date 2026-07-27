@@ -59,9 +59,10 @@ class ChatDBReader:
         self,
         chat_id: str,
         before_message_id: int,
+        after_timestamp: datetime | None = None,
         limit: int = 30,
     ) -> list[Message]:
-        """Return preceding messages in chronological order."""
+        """Return preceding messages within the requested bounded window in chronological order."""
         if limit <= 0:
             return []
 
@@ -88,7 +89,14 @@ class ChatDBReader:
             query,
             (chat_id, before_message_id, limit),
         ).fetchall()
-        return [self._row_to_message(row) for row in reversed(rows)]
+        messages = [self._row_to_message(row) for row in reversed(rows)]
+        if after_timestamp is not None:
+            messages = [
+                message
+                for message in messages
+                if message.timestamp >= after_timestamp
+            ]
+        return messages
 
     @staticmethod
     def _from_apple_timestamp(value: int | float) -> datetime:
