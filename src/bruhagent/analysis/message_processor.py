@@ -24,9 +24,17 @@ class MessageProcessor:
     def process_new_messages(
         self,
         through_message_id: int | None = None,
+        since: datetime | None = None
     ) -> dict[str, Plan]:
         cursor = self.state_store.get_last_processed_message_id()
-        new_messages = self.reader.get_messages(after_message_id=cursor)
+        if since is None:
+            since = datetime.now(timezone.utc) - timedelta(days=7)
+        print(since.isoformat())
+
+        new_messages = self.reader.get_messages(
+            after_message_id=cursor,
+            after_time_stamp=since
+        )
         if through_message_id is not None:
             new_messages = [
                 message

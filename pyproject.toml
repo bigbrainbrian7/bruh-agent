@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools >= 77.0.3"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bruh-agent"
+version = "0.1.0"
+description = "Local iMessage plan coordination assistant"
+requires-python = ">=3.12"
+dependencies = [
+    "openai",
+]
+
+[project.scripts]
+bruh = "bruhagent.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

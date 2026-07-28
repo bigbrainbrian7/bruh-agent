@@ -16,6 +16,7 @@ class ChatDBReader:
         self,
         chat_id: str | None = None,
         after_message_id: int | None = None,
+        after_time_stamp: datetime | None = None,
     ) -> list[Message]:
 
         query = """
@@ -45,6 +46,12 @@ class ChatDBReader:
         if after_message_id is not None:
             conditions.append("message.ROWID > ?")
             params.append(after_message_id)
+
+        if after_time_stamp is not None:
+            print(f"after time stamp {after_time_stamp}")
+            print(f"apple format{self._to_apple_timestamp(after_time_stamp)}")
+            conditions.append("message.date > ?")
+            params.append(self._to_apple_timestamp(after_time_stamp))
 
         if conditions:
             query += " WHERE " + " AND ".join(conditions)
@@ -103,6 +110,12 @@ class ChatDBReader:
         """Convert Apple's 2001-epoch seconds or nanoseconds to UTC."""
         seconds = value / 1_000_000_000 if abs(value) >= 1_000_000_000_000 else value
         return APPLE_EPOCH + timedelta(seconds=seconds)
+    
+    @staticmethod
+    def _to_apple_timestamp(value: datetime) -> int:
+        """Convert UTC to Apple's 2001-epoch nanoseconds."""
+        datetime_apple_format = value - APPLE_EPOCH
+        return int(datetime_apple_format.total_seconds() * 1_000_000_000)
 
     # TOOD: recognize when sender is self
     def _row_to_message(self, row: sqlite3.Row) -> Message:

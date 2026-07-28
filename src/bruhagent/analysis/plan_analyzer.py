@@ -86,6 +86,7 @@ New messages since the last scan, to update or create the plan state:
 
 {messages_to_string(messages)}
 """
+# TODO: splice the messages to not reach token limit
 
         response = client.chat.completions.create(
             model=model,
