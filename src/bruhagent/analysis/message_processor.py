@@ -51,6 +51,7 @@ class MessageProcessor:
         analyses: dict[str, Plan] = {}
 
         for chat_id, chat_messages in messages_by_chat.items():
+            print(f"Processing chat {chat_id}")
             previous_plan = self.state_store.get_plan(chat_id)
             first_new_message = chat_messages[0]
             previous_messages = self.reader.get_recent_messages(
@@ -58,20 +59,19 @@ class MessageProcessor:
                 before_message_id=first_new_message.id,
                 after_timestamp=first_new_message.timestamp - timedelta(days=3),
             )
-            plan = PlanAnalyzer.analyze_chat(
+            plan_extraction = PlanAnalyzer.analyze_chat(
                 chat_messages,
                 previous_messages=previous_messages,
                 previous_plan=previous_plan,
                 model=self.model,
             )
-            analyses[chat_id] = plan
-            plans.append(
-                replace(
-                    plan,
-                    chat_id=chat_id,
-                    updated_at=processed_at,
-                )
+            plan = Plan.from_plan_extraction(
+                plan_extraction=plan_extraction, 
+                chat_id=chat_id, 
+                updated_at=processed_at
             )
+            analyses[chat_id] = plan
+            plans.append(plan)
 
         self.state_store.save_processing_results(
             plans=plans,

@@ -1,6 +1,6 @@
 import json
-from bruhagent.llm import client
-from bruhagent.models import Message, Plan
+from ollama import chat
+from bruhagent.models import Message, Plan, PlanExtraction
 
 from .conversation import messages_to_string
 
@@ -12,14 +12,13 @@ class PlanAnalyzer:
         previous_messages: list[Message] | None = None,
         previous_plan: Plan | None = None,
         model="qwen3:8b",
-    ) -> Plan:
+    ) -> PlanExtraction:
         previous_plan_text = "No previous plan state is saved for this chat."
         if previous_plan is not None:
             previous_plan_text = f"""
 The following is the saved plan state from an earlier analysis. It may be stale;
 the conversation messages are the source of truth when they conflict.
 
-- Has plan: {previous_plan.has_plan}
 - Plan: {previous_plan.plan}
 - Status: {previous_plan.status}
 - Reason: {previous_plan.reason}
@@ -69,7 +68,6 @@ Completed:
 Return JSON only:
 
 {{
-"has_plan": bool,
 "plan": string|null,
 "status": "active" | "stuck" | "completed" | "none",
 "reason": string|null
@@ -88,28 +86,16 @@ New messages since the last scan, to update or create the plan state:
 """
 # TODO: splice the messages to not reach token limit
 
-        response = client.chat.completions.create(
+        response = chat(
             model=model,
-            
-            #TODO: move to structured outputs: 
-            #https://developers.openai.com/api/docs/guides/structured-outputs
-            #https://ollama.com/blog/structured-outputs
-            response_format={
-                "type":"json_object"
-            },
             messages=[
                 {
                     "role":"user",
                     "content":prompt
                 }
-            ]
+            ],
+            format = PlanExtraction.model_json_schema()
         )
 
 
-        analysis = json.loads(response.choices[0].message.content)
-        return Plan(
-            has_plan=analysis["has_plan"],
-            plan=analysis["plan"],
-            status=analysis["status"],
-            reason=analysis.get("reason"),
-        )
+        return PlanExtraction.model_validate_json(response.message.content)

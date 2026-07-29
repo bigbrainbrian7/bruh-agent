@@ -115,7 +115,7 @@ class ChatDBReader:
         return int(datetime_apple_format.total_seconds() * 1_000_000_000)
 
     # TOOD: recognize when sender is self
-    def _row_to_message(self, row: sqlite3.Row) -> Message | None:
+    def _row_to_message(self, row: sqlite3.Row) -> Message:
         id, chat_id, sender, timestamp, text, is_from_me, attributed_body = row
 
         # code taken from here 

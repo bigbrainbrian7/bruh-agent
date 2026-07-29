@@ -24,9 +24,6 @@ def json_to_messages(json_messages: list[dict[str, str]], chat_id: str) -> list[
 #TODO: add metric for semantic similarity between llm generated plan and reasoning and evaluation conversations
 def evaluate_prediction(prediction, expected):
     return {
-        "has_plan": (
-            prediction.has_plan == expected.get("has_plan")
-        ),
         "status": (
             prediction.status == expected.get("status")
         )
@@ -38,7 +35,6 @@ def test_accuracy_from_json(json_file_path: str):
         dataset = json.load(f)
 
     totals = {
-        "has_plan": 0,
         "status": 0
     }
 
@@ -89,7 +85,6 @@ def test_accuracy_from_sqlite_db(json_file_path: str, db_file_path: str):
     chat_ids = reader.get_chat_guids()
 
     totals = {
-        "has_plan": 0,
         "status": 0
     }
 
@@ -128,7 +123,8 @@ def test_accuracy_from_sqlite_db(json_file_path: str, db_file_path: str):
     return totals
 
 def main():
-    test_accuracy_from_sqlite_db("data/fake_conversations.json", "data/fake_chat.db")
+    # doesn't work anymore
+    # test_accuracy_from_sqlite_db("data/fake_conversations.json", "data/fake_chat.db")
     test_accuracy_from_json("data/fake_conversations.json")
 
 

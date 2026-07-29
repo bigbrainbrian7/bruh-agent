@@ -24,7 +24,6 @@ class StateStore:
             """
             CREATE TABLE IF NOT EXISTS plans (
                 chat_id TEXT PRIMARY KEY,
-                has_plan INTEGER NOT NULL,
                 plan TEXT,
                 status TEXT NOT NULL,
                 reason TEXT,
@@ -60,7 +59,7 @@ class StateStore:
     def get_plan(self, chat_id: str) -> Plan | None:
         row = self.conn.execute(
             """
-            SELECT chat_id, has_plan, plan, status, reason, updated_at
+            SELECT chat_id, plan, status, reason, updated_at
             FROM plans
             WHERE chat_id = ?
             """,
@@ -70,12 +69,11 @@ class StateStore:
             return None
 
         return Plan(
-            has_plan=bool(row[1]),
-            plan=row[2],
-            status=row[3],
-            reason=row[4],
+            plan=row[1],
+            status=row[2],
+            reason=row[3],
             chat_id=row[0],
-            updated_at=datetime.fromisoformat(row[5]),
+            updated_at=datetime.fromisoformat(row[4]),
         )
 
     # Hide until needed. Coud potentially offset stored state
@@ -111,10 +109,9 @@ class StateStore:
         self.conn.execute(
             """
             INSERT INTO plans (
-                chat_id, has_plan, plan, status, reason, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?)
+                chat_id, plan, status, reason, updated_at
+            ) VALUES (?, ?, ?, ?, ?)
             ON CONFLICT(chat_id) DO UPDATE SET
-                has_plan = excluded.has_plan,
                 plan = excluded.plan,
                 status = excluded.status,
                 reason = excluded.reason,
@@ -122,7 +119,6 @@ class StateStore:
             """,
             (
                 plan.chat_id,
-                plan.has_plan,
                 plan.plan,
                 plan.status,
                 plan.reason,
