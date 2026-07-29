@@ -28,8 +28,9 @@ class MessageProcessor:
     ) -> dict[str, Plan]:
         cursor = self.state_store.get_last_processed_message_id()
         if since is None:
-            since = datetime.now(timezone.utc) - timedelta(days=7)
-        print(since.isoformat())
+            # TODO: Determine good time frame to process new messages if haven't processed in a while
+            since = datetime.now(timezone.utc) - timedelta(hours=12)
+        print(f'Processing new messages after {since.strftime("%B %d, %Y - %H:%M")}')
 
         new_messages = self.reader.get_messages(
             after_message_id=cursor,
@@ -58,7 +59,7 @@ class MessageProcessor:
             previous_messages = self.reader.get_recent_messages(
                 chat_id,
                 before_message_id=first_new_message.id,
-                after_timestamp=first_new_message.timestamp - timedelta(days=7),
+                after_timestamp=first_new_message.timestamp - timedelta(days=3),
             )
             plan = PlanAnalyzer.analyze_chat(
                 chat_messages,

@@ -6,6 +6,24 @@ from ..models import Message
 
 APPLE_EPOCH = datetime(2001, 1, 1, tzinfo=timezone.utc)
 
+base_query = query = """
+        SELECT
+            message.ROWID,
+            chat.guid,
+            handle.id,
+            message.date,
+            message.text,
+            message.is_from_me,
+            message.attributedBody
+        FROM message
+        JOIN chat_message_join
+            ON message.ROWID = chat_message_join.message_id
+        JOIN chat
+            ON chat.ROWID = chat_message_join.chat_id
+        LEFT JOIN handle
+            ON handle.ROWID = message.handle_id
+        """
+
 
 class ChatDBReader:
     def __init__(self, db_path: str):
@@ -19,22 +37,7 @@ class ChatDBReader:
         after_time_stamp: datetime | None = None,
     ) -> list[Message]:
 
-        query = """
-        SELECT
-            message.ROWID,
-            chat.guid,
-            handle.id,
-            message.date,
-            message.text,
-            message.is_from_me
-        FROM message
-        JOIN chat_message_join
-            ON message.ROWID = chat_message_join.message_id
-        JOIN chat
-            ON chat.ROWID = chat_message_join.chat_id
-        LEFT JOIN handle
-            ON handle.ROWID = message.handle_id
-        """
+        query = base_query
 
         conditions = []
         params: list[str | int] = []
@@ -48,13 +51,12 @@ class ChatDBReader:
             params.append(after_message_id)
 
         if after_time_stamp is not None:
-            print(f"after time stamp {after_time_stamp}")
-            print(f"apple format{self._to_apple_timestamp(after_time_stamp)}")
             conditions.append("message.date > ?")
             params.append(self._to_apple_timestamp(after_time_stamp))
 
         if conditions:
             query += " WHERE " + " AND ".join(conditions)
+
 
         query += " ORDER BY message.ROWID"
 
@@ -73,21 +75,7 @@ class ChatDBReader:
         if limit <= 0:
             return []
 
-        query = """
-        SELECT
-            message.ROWID,
-            chat.guid,
-            handle.id,
-            message.date,
-            message.text,
-            message.is_from_me
-        FROM message
-        JOIN chat_message_join
-            ON message.ROWID = chat_message_join.message_id
-        JOIN chat
-            ON chat.ROWID = chat_message_join.chat_id
-        LEFT JOIN handle
-            ON handle.ROWID = message.handle_id
+        query = base_query + """
         WHERE chat.guid = ? AND message.ROWID < ?
         ORDER BY message.ROWID DESC
         LIMIT ?
@@ -96,13 +84,16 @@ class ChatDBReader:
             query,
             (chat_id, before_message_id, limit),
         ).fetchall()
+
         messages = [self._row_to_message(row) for row in reversed(rows)]
+
         if after_timestamp is not None:
             messages = [
                 message
                 for message in messages
                 if message.timestamp >= after_timestamp
             ]
+
         return messages
 
     @staticmethod
@@ -118,14 +109,41 @@ class ChatDBReader:
         return int(datetime_apple_format.total_seconds() * 1_000_000_000)
 
     # TOOD: recognize when sender is self
-    def _row_to_message(self, row: sqlite3.Row) -> Message:
+    def _row_to_message(self, row: sqlite3.Row) -> Message | None:
+        id, chat_id, sender, timestamp, text, is_from_me, attributed_body = row
+
+        # code taken from here 
+        # github.com/my-other-github-account/imessage_tools/blob/master/imessage_tools.py
+
+        sender = sender or "Me"
+        timestamp = self._from_apple_timestamp(timestamp)
+        is_from_me = bool(is_from_me)
+
+        if text is not None:
+            body = text
+        # TODO: handle other media types (eg. video)
+        elif attributed_body is None:
+            body = ""
+        else:
+            attributed_body = attributed_body.decode('utf-8', errors='replace')
+
+            if "NSNumber" in str(attributed_body):
+                attributed_body = str(attributed_body).split("NSNumber")[0]
+                if "NSString" in attributed_body:
+                    attributed_body = str(attributed_body).split("NSString")[1]
+                    if "NSDictionary" in attributed_body:
+                        attributed_body = str(attributed_body).split("NSDictionary")[0]
+                        attributed_body = attributed_body[6:-12]
+                        body = attributed_body
+
+
         return Message(
-            id=row[0],
-            chat_id=row[1],
-            sender=row[2] if row[2] else "Me",
-            timestamp=self._from_apple_timestamp(row[3]),
-            text=row[4] or "",
-            is_from_me=bool(row[5]),
+            id=id,
+            chat_id=chat_id,
+            sender=sender,
+            timestamp=timestamp,
+            text=body,
+            is_from_me=is_from_me,
         )
     
     def get_chat_guids(self, after_message_id: int | None = None) -> list[str]:
