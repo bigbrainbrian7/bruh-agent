@@ -23,18 +23,15 @@ class MessageProcessor:
 
     def process_new_messages(
         self,
+        since: datetime,
         through_message_id: int | None = None,
-        since: datetime | None = None
     ) -> dict[str, Plan]:
         cursor = self.state_store.get_last_processed_message_id()
-        if since is None:
-            # TODO: Determine good time frame to process new messages if haven't processed in a while
-            since = datetime.now(timezone.utc) - timedelta(hours=12)
         print(f'Processing new messages after {since.strftime("%B %d, %Y - %H:%M")}')
 
         new_messages = self.reader.get_messages(
             after_message_id=cursor,
-            after_time_stamp=since
+            after_timestamp=since
         )
         if through_message_id is not None:
             new_messages = [

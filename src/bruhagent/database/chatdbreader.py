@@ -1,12 +1,13 @@
 import sqlite3
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 
 from ..models import Message
 
 
 APPLE_EPOCH = datetime(2001, 1, 1, tzinfo=timezone.utc)
 
-base_query = query = """
+BASE_QUERY = """
         SELECT
             message.ROWID,
             chat.guid,
@@ -26,18 +27,23 @@ base_query = query = """
 
 
 class ChatDBReader:
-    def __init__(self, db_path: str):
-        self.conn = sqlite3.connect(db_path)
+
+    def __init__(self, db_path: str | Path):
+        path = Path(db_path).expanduser().resolve()
+        if not path.is_file():
+            raise FileNotFoundError(f"Messages database not found: {path}")
+
+        self.conn = sqlite3.connect(f"{path.as_uri()}?mode=ro", uri=True)
         self.conn.row_factory = sqlite3.Row
 
     def get_messages(
         self,
         chat_id: str | None = None,
         after_message_id: int | None = None,
-        after_time_stamp: datetime | None = None,
+        after_timestamp: datetime | None = None,
     ) -> list[Message]:
 
-        query = base_query
+        query = BASE_QUERY
 
         conditions = []
         params: list[str | int] = []
@@ -50,9 +56,9 @@ class ChatDBReader:
             conditions.append("message.ROWID > ?")
             params.append(after_message_id)
 
-        if after_time_stamp is not None:
+        if after_timestamp is not None:
             conditions.append("message.date > ?")
-            params.append(self._to_apple_timestamp(after_time_stamp))
+            params.append(self._to_apple_timestamp(after_timestamp))
 
         if conditions:
             query += " WHERE " + " AND ".join(conditions)
@@ -75,7 +81,7 @@ class ChatDBReader:
         if limit <= 0:
             return []
 
-        query = base_query + """
+        query = BASE_QUERY + """
         WHERE chat.guid = ? AND message.ROWID < ?
         ORDER BY message.ROWID DESC
         LIMIT ?

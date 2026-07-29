@@ -6,6 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "bruh-agent"
 version = "0.1.0"
 description = "Local iMessage plan coordination assistant"
+readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "openai",
