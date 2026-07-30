@@ -94,8 +94,15 @@ New messages since the last scan, to update or create the plan state:
                     "content":prompt
                 }
             ],
-            format = PlanExtraction.model_json_schema()
+            format = PlanExtraction.model_json_schema(),
+            think=False,
+            keep_alive='1m'
         )
+
+        # print("\nPERFORMANCE STATS")
+        # for field in ["total_duration", "load_duration", "prompt_eval_duration", "eval_duration"]:
+        #     print(f"{field}: {response[field]/1_000_000_000}")
+        # print(f"Messages characters: {len(messages_to_string(messages))}\n")
 
 
         return PlanExtraction.model_validate_json(response.message.content)
