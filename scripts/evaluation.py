@@ -16,7 +16,6 @@ def json_to_messages(json_messages: list[dict[str, str]], chat_id: str) -> list[
             sender=message["sender"],
             timestamp=datetime.now(),
             text=message["text"],
-            is_from_me=False,
         )
         for index, message in enumerate(json_messages, start=1)
     ]

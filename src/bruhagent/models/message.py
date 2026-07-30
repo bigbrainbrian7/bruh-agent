@@ -9,4 +9,4 @@ class Message:
     sender: str
     timestamp: datetime
     text: str
-    is_from_me: bool
+    # is_from_me: bool

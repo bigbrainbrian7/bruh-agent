@@ -121,9 +121,9 @@ class ChatDBReader:
         # code taken from here 
         # github.com/my-other-github-account/imessage_tools/blob/master/imessage_tools.py
 
-        sender = sender or "Me"
-        timestamp = self._from_apple_timestamp(timestamp)
         is_from_me = bool(is_from_me)
+        sender = sender if sender and not is_from_me else "Me"
+        timestamp = self._from_apple_timestamp(timestamp)
 
         if text is not None:
             body = text
@@ -149,7 +149,6 @@ class ChatDBReader:
             sender=sender,
             timestamp=timestamp,
             text=body,
-            is_from_me=is_from_me,
         )
     
     def get_chat_guids(self, after_message_id: int | None = None) -> list[str]:
