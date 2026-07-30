@@ -40,7 +40,9 @@ class ChatDBReader:
         self,
         chat_id: str | None = None,
         after_message_id: int | None = None,
+        before_message_id: int | None = None,
         after_timestamp: datetime | None = None,
+        limit: int | None = None,
     ) -> list[Message]:
 
         query = BASE_QUERY
@@ -56,6 +58,10 @@ class ChatDBReader:
             conditions.append("message.ROWID > ?")
             params.append(after_message_id)
 
+        if before_message_id is not None:
+            conditions.append("message.ROWID < ?")
+            params.append(before_message_id)
+
         if after_timestamp is not None:
             conditions.append("message.date > ?")
             params.append(self._to_apple_timestamp(after_timestamp))
@@ -64,43 +70,15 @@ class ChatDBReader:
             query += " WHERE " + " AND ".join(conditions)
 
 
-        query += " ORDER BY message.ROWID"
+        query += " ORDER BY message.ROWID DESC"
+
+        if limit is not None:
+            query += " LIMIT ?"
+            params.append(limit)
 
         rows = self.conn.execute(query, params).fetchall()
 
-        return [self._row_to_message(row) for row in rows]
-
-    def get_recent_messages(
-        self,
-        chat_id: str,
-        before_message_id: int,
-        after_timestamp: datetime | None = None,
-        limit: int = 30,
-    ) -> list[Message]:
-        """Return preceding messages within the requested bounded window in chronological order."""
-        if limit <= 0:
-            return []
-
-        query = BASE_QUERY + """
-        WHERE chat.guid = ? AND message.ROWID < ?
-        ORDER BY message.ROWID DESC
-        LIMIT ?
-        """
-        rows = self.conn.execute(
-            query,
-            (chat_id, before_message_id, limit),
-        ).fetchall()
-
-        messages = [self._row_to_message(row) for row in reversed(rows)]
-
-        if after_timestamp is not None:
-            messages = [
-                message
-                for message in messages
-                if message.timestamp >= after_timestamp
-            ]
-
-        return messages
+        return [self._row_to_message(row) for row in reversed(rows)]
 
     @staticmethod
     def _from_apple_timestamp(value: int | float) -> datetime:
@@ -151,7 +129,11 @@ class ChatDBReader:
             text=body,
         )
     
-    def get_chat_guids(self, after_message_id: int | None = None) -> list[str]:
+    def get_chat_ids(
+            self, 
+            after_message_id: int | None = None,
+            limit: int | None = None,
+        ) -> list[str]:
         query = """
         SELECT chat.guid
         FROM chat
@@ -166,9 +148,14 @@ class ChatDBReader:
             query += " WHERE message.ROWID > ?"
             params.append(after_message_id)
 
-        query += " GROUP BY chat.guid ORDER BY MIN(message.ROWID)"
+        query += " GROUP BY chat.guid ORDER BY MAX(message.ROWID) DESC"
+
+        if limit is not None:
+            query += " LIMIT ?"
+            params.append(limit)
 
         rows = self.conn.execute(query, params).fetchall()
+        
 
         return [row[0] for row in rows]
     

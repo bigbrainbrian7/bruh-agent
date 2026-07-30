@@ -3,7 +3,7 @@ import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
 
-from ..models import Plan
+from ..models import Plan, Chat
 
 
 class StateStore:
@@ -13,14 +13,6 @@ class StateStore:
         path = Path(db_path)
         path.parent.mkdir(parents=True, exist_ok=True)
         self.conn = sqlite3.connect(path)
-        self.conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS agent_state (
-                id INTEGER PRIMARY KEY CHECK (id = 1),
-                last_processed_message_id INTEGER NOT NULL DEFAULT 0
-            )
-            """
-        )
         self.conn.execute(
             """
             CREATE TABLE IF NOT EXISTS plans (
@@ -33,28 +25,13 @@ class StateStore:
             )
             """
         )
-        self.conn.commit()
-
-    def get_last_processed_message_id(self) -> int:
-        row = self.conn.execute(
-            """
-            SELECT last_processed_message_id
-            FROM agent_state
-            WHERE id = 1
-            """
-        ).fetchone()
-
-        return row[0] if row else 0
-
-    def set_last_processed_message_id(self, message_id: int) -> None:
         self.conn.execute(
             """
-            INSERT INTO agent_state (id, last_processed_message_id)
-            VALUES (1, ?)
-            ON CONFLICT(id) DO UPDATE SET
-                last_processed_message_id = excluded.last_processed_message_id
-            """,
-            (message_id,),
+            CREATE TABLE IF NOT EXISTS tracked_chats (
+                chat_id TEXT PRIMARY KEY,
+                last_processed_message_id INTEGER NOT NULL DEFAULT 0
+            )
+            """
         )
         self.conn.commit()
 
@@ -87,21 +64,14 @@ class StateStore:
     def save_processing_results(
         self,
         plans: list[Plan],
-        last_processed_message_id: int,
+        chats: list[Chat],
     ) -> None:
         """Atomically save all chat results and advance the global cursor."""
         with self.conn:
             for plan in plans:
                 self._upsert_plan(plan)
-            self.conn.execute(
-                """
-                INSERT INTO agent_state (id, last_processed_message_id)
-                VALUES (1, ?)
-                ON CONFLICT(id) DO UPDATE SET
-                    last_processed_message_id = excluded.last_processed_message_id
-                """,
-                (last_processed_message_id,),
-            )
+            for chat in chats:
+                self._upsert_tracked_chat(chat)
 
     def _upsert_plan(self, plan: Plan) -> None:
         if (
@@ -130,6 +100,52 @@ class StateStore:
                 plan.updated_at.astimezone(timezone.utc).isoformat(),
             ),
         )
+
+    def get_tracked_chats(self) -> list[Chat]:
+        rows = self.conn.execute("""
+            SELECT chat_id, last_processed_message_id FROM tracked_chats
+        """).fetchall()
+
+        return [Chat(chat_id=row[0], last_processed_message_id=row[1]) for row in rows]
+
+    def _upsert_tracked_chat(self, chat: Chat) -> None:
+        self.conn.execute(
+            """
+            INSERT INTO tracked_chats (
+                chat_id, last_processed_message_id
+            ) VALUES (?, ?)
+            ON CONFLICT (chat_id) DO UPDATE SET
+                last_processed_message_id = excluded.last_processed_message_id
+            """,
+            (chat.chat_id, chat.last_processed_message_id)
+        )
+        self.conn.commit()
+
+    def add_tracked_chat(self, chat_id: str) -> bool:
+        with self.conn:
+            cursor = self.conn.execute(
+                """
+                INSERT INTO tracked_chats (chat_id)
+                VALUES (?)
+                ON CONFLICT(chat_id) DO NOTHING
+                """,
+                (chat_id,),
+            )
+
+        return cursor.rowcount == 1
+
+
+    def remove_tracked_chat(self, chat_id: str) -> bool:
+        with self.conn:
+            cursor = self.conn.execute(
+                """
+                DELETE FROM tracked_chats
+                WHERE chat_id = ?
+                """,
+                (chat_id,),
+            )
+
+        return cursor.rowcount == 1
 
     def close(self) -> None:
         self.conn.close()

@@ -26,25 +26,28 @@ class MessageProcessor:
         since: datetime,
         through_message_id: int | None = None,
     ) -> dict[str, Plan]:
-        cursor = self.state_store.get_last_processed_message_id()
+        chats = self.state_store.get_tracked_chats()
         print(f'Processing new messages after {since.strftime("%B %d, %Y - %H:%M")}')
 
-        new_messages = self.reader.get_messages(
-            after_message_id=cursor,
-            after_timestamp=since
-        )
-        if through_message_id is not None:
-            new_messages = [
-                message
-                for message in new_messages
-                if message.id <= through_message_id
-            ]
-        if not new_messages:
-            return {}
+        messages_by_chat: dict[str, list[Message]] = {}
 
-        messages_by_chat: dict[str, list[Message]] = defaultdict(list)
-        for message in new_messages:
-            messages_by_chat[message.chat_id].append(message)
+        for chat in chats:
+            new_messages = self.reader.get_messages(
+                chat_id=chat.chat_id,
+                after_message_id=chat.last_processed_message_id,
+                after_timestamp=since
+            )
+            if not new_messages: 
+                continue
+            messages_by_chat[chat.chat_id] = new_messages
+            # #for testing
+            # if through_message_id is not None:
+            #     new_messages = [
+            #         message
+            #         for message in new_messages
+            #         if message.id <= through_message_id
+            #     ]
+            chat.last_processed_message_id = new_messages[-1].id
 
         processed_at = datetime.now(timezone.utc)
         plans: list[Plan] = []
@@ -54,13 +57,14 @@ class MessageProcessor:
             print(f"Processing chat {chat_id}")
             previous_plan = self.state_store.get_plan(chat_id)
             first_new_message = chat_messages[0]
-            previous_messages = self.reader.get_recent_messages(
+            previous_messages = self.reader.get_messages(
                 chat_id,
                 before_message_id=first_new_message.id,
                 after_timestamp=first_new_message.timestamp - timedelta(days=3),
+                limit=30
             )
             plan_extraction = PlanAnalyzer.analyze_chat(
-                chat_messages,
+                messages=chat_messages,
                 previous_messages=previous_messages,
                 previous_plan=previous_plan,
                 model=self.model,
@@ -75,6 +79,6 @@ class MessageProcessor:
 
         self.state_store.save_processing_results(
             plans=plans,
-            last_processed_message_id=new_messages[-1].id,
+            chats=chats
         )
         return analyses

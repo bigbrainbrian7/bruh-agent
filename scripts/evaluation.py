@@ -81,7 +81,7 @@ def test_accuracy_from_sqlite_db(json_file_path: str, db_file_path: str):
         dataset = json.load(f)
 
     reader = ChatDBReader(db_file_path)
-    chat_ids = reader.get_chat_guids()
+    chat_ids = reader.get_chat_ids()
 
     totals = {
         "status": 0

@@ -34,7 +34,6 @@ def main() -> int:
 
     scan_parser = subparsers.add_parser("scan", help="Analyze new iMessage conversations")
     scan_parser.add_argument("--chat-db", type=Path, default=DEFAULT_CHAT_DB)
-    scan_parser.add_argument("--state-db", type=Path, default=DEFAULT_STATE_DB)
     scan_parser.add_argument("--model", default="qwen3:8b")
     # TODO: Determine good time frame to process new messages if haven't processed in a while
     # essentially jsut the default since-hours value
@@ -45,7 +44,78 @@ def main() -> int:
         help="Initial scan window; ignored after the first successful scan (default: 12)",
     )
 
+    chats_parser = subparsers.add_parser("chats", help="Manage tracked chats")
+    chats_subparsers = chats_parser.add_subparsers(
+        dest="chats_command",
+        required=True
+    )
+    list_parser = chats_subparsers.add_parser(
+        "list",
+        help="List chats available in Messages",
+    )
+    list_parser.add_argument(
+        "--limit",
+        type=positive_int,
+        default=10,
+        help="Show only this many most recently active chats",
+    )
+
+    chats_subparsers.add_parser("tracked")
+    add_chat_parser = chats_subparsers.add_parser("add")
+    add_chat_parser.add_argument("chat_id")
+
+    remove_chat_parser = chats_subparsers.add_parser("rm")
+    remove_chat_parser.add_argument("chat_id")
+
+
+
     args = parser.parse_args()
+
+    if args.command == "chats":
+        state_store = None
+
+        try:
+            state_store = StateStore(DEFAULT_STATE_DB)
+
+            if args.chats_command == "list":
+                reader = None
+                try:
+                    reader = ChatDBReader(DEFAULT_CHAT_DB)
+                    print("most recent chat_ids")
+                    for chat_id in reader.get_chat_ids(limit=args.limit):
+                        print(chat_id)
+                finally:
+                    if reader is not None:
+                        reader.close()
+            elif args.chats_command == "tracked":
+                chats = state_store.get_tracked_chats()
+
+                if not chats:
+                    print("No chats are being analyzed.")
+                else:
+                    for chat in chats:
+                        print(chat.chat_id)
+
+            elif args.chats_command == "add":
+                state_store.add_tracked_chat(args.chat_id)
+                print(f"Now analyzing: {args.chat_id}")
+
+            elif args.chats_command == "rm":
+                removed = state_store.remove_tracked_chat(args.chat_id)
+
+                if removed:
+                    print(f"Stopped analyzing: {args.chat_id}")
+                else:
+                    print(f"Chat was not being analyzed: {args.chat_id}")
+
+            return 0
+
+        except sqlite3.OperationalError as error:
+                    print(f"Database error: {error}", file=sys.stderr)
+                    return 1
+        finally:
+            if state_store is not None:
+                state_store.close()
 
     if args.command == "scan":
         reader = None
@@ -53,7 +123,7 @@ def main() -> int:
 
         try:
             reader = ChatDBReader(args.chat_db)
-            state_store = StateStore(args.state_db)
+            state_store = StateStore(DEFAULT_STATE_DB)
             processor = MessageProcessor(reader, state_store, model=args.model)
             since = datetime.now(timezone.utc) - timedelta(hours=args.since_hours)
             plans = processor.process_new_messages(since=since)
