@@ -10,6 +10,7 @@ class PlanExtraction(BaseModel):
     """dataclass for info the be extracted from conversation"""
     status: PlanStatus
     plan: str | None
+    blockers: list[str] | None
     reason: str
     confidence: float = 0.0
 
@@ -19,6 +20,7 @@ class Plan:
 
     status: PlanStatus
     plan: str | None
+    blockers: list[str] | None
     reason: str
     chat_id: str
     confidence: float = 0.0
@@ -34,6 +36,7 @@ class Plan:
         return cls(
             status=plan_extraction.status,
             plan=plan_extraction.plan,
+            blockers=plan_extraction.blockers,
             reason=plan_extraction.reason,
             confidence=plan_extraction.confidence,
             chat_id=chat_id,

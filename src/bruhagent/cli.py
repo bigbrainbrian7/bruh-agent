@@ -3,6 +3,7 @@ import sqlite3
 import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from textwrap import fill
 
 from openai import APIConnectionError, APIStatusError
 
@@ -60,7 +61,27 @@ def main() -> int:
             if not plans:
                 print("No new messages to analyze.")
             for chat_id, plan in plans.items():
-                print(f"{chat_id}: {plan.status} — {plan.plan}")
+                print("=" * 72)
+                print(f"Chat: {chat_id}")
+                print(f"Status: {plan.status.upper()}")
+                print()
+                print("Plan:")
+                print(fill(plan.plan or "No plan identified.", width=72,
+                           initial_indent="  ", subsequent_indent="  "))
+                print()
+                print("Blockers:")
+                if plan.blockers:
+                    for blocker in plan.blockers:
+                        print(fill(blocker, width=72, initial_indent="  - ",
+                                   subsequent_indent="    "))
+                else:
+                    print("  None")
+                print()
+                print("Reason:")
+                print(fill(plan.reason, width=72, initial_indent="  ",
+                           subsequent_indent="  "))
+            if plans:
+                print("=" * 72)
             return 0
         except FileNotFoundError as error:
             print(error, file=sys.stderr)

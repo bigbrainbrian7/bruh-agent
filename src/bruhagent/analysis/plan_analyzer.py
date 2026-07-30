@@ -24,54 +24,31 @@ the conversation messages are the source of truth when they conflict.
 - Reason: {previous_plan.reason}
 """
         prompt = f"""
-You analyze group conversations.
+Analyze this imessage conversation and determine whether there is a plan, or if a plan might come together.
 
-Determine whether there is a plan and what state the plan is in.
+Do not take irrelevant information and rationalize it as a plan possibly coming together
+However, the bar should be moderately low (eg. vague statements as "we should hangout")
 
-Definitions of statuses:
+Questions such as "When should we hangout" should also be considered as a possible start to a plan
 
-- "none": There is no actual plan. The conversation only contains vague ideas,
-  suggestions, wishes, or hypothetical discussions (e.g. "we should hang out sometime").
+Categorize it under statuses, and store it under the status field
 
-- "active": A plan exists and participants are actively making progress.
-  The group is still discussing details and the conversation is moving forward.
-  Use this when unresolved details are being actively worked on.
-
+- "none": the conversation has no notion of a plan or one coming together
+- "active": A plan has been started, and participants are making progress
 - "stuck": A plan exists, but progress has stalled because an important decision
-  or piece of information is missing. Use this when the group cannot move forward
-  without resolving something (for example: no location, no date, no participants,
-  no agreement on key details).
-
+  or piece of information is missing. 
 - "completed": The plan has been finalized. Important logistics have been decided,
-  such as time, location, and participants, or the event is already scheduled.
+  such as time, location, and participants, or is already scheduled.
 
-Examples:
+If a decision has not been agreed upon, or in other words only has one party making statements, do not consider that particular aspect as settled.
 
-Active:
-"Movie night Friday?"
-"I'm free"
-"Cool, I'll pick a movie later"
-→ The plan is progressing.
+the plan field is the key information/main goal of a plan if it has been started. One sentence, brief
 
-Stuck:
-"We should hike this weekend"
-"I'm down"
-"Saturday works"
-"Where should we go?"
-→ The plan exists but cannot proceed until a location is chosen.
+the blockers field are any important decision that hasn't been made or key information thats missing. There may be multiple blockers.
 
-Completed:
-"Dinner Friday at Luigi's at 7?"
-"Sounds good"
-→ The plan is finalized.
+the reason field is why you have chosen the status and the representation of the plan the way you did. keep it concise, but do not leave out key information
 
-Return JSON only:
-
-{{
-"plan": string|null,
-"status": "active" | "stuck" | "completed" | "none",
-"reason": string|null
-}}
+the confidence field is 0-100 of how confident you are of your selection and reasonings
 
 Previous plan state:
 
@@ -80,7 +57,7 @@ Previous plan state:
 Earlier messages for context:
 {"There are no previous messages" if not previous_messages else messages_to_string(previous_messages)}
 
-New messages since the last scan, to update or create the plan state:
+New messages since the last scan. If previous ongoing plan exists, use the new and earlier messages to update your understanding. Do not just treat them as two separate events:
 
 {messages_to_string(messages)}
 """

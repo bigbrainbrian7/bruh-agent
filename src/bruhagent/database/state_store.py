@@ -1,3 +1,4 @@
+import json
 import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
@@ -25,6 +26,7 @@ class StateStore:
             CREATE TABLE IF NOT EXISTS plans (
                 chat_id TEXT PRIMARY KEY,
                 plan TEXT,
+                blockers TEXT NOT NULL DEFAULT '[]',
                 status TEXT NOT NULL,
                 reason TEXT,
                 updated_at TEXT NOT NULL
@@ -59,7 +61,7 @@ class StateStore:
     def get_plan(self, chat_id: str) -> Plan | None:
         row = self.conn.execute(
             """
-            SELECT chat_id, plan, status, reason, updated_at
+            SELECT chat_id, plan, blockers, status, reason, updated_at
             FROM plans
             WHERE chat_id = ?
             """,
@@ -70,10 +72,11 @@ class StateStore:
 
         return Plan(
             plan=row[1],
-            status=row[2],
-            reason=row[3],
+            blockers=json.loads(row[2]),
+            status=row[3],
+            reason=row[4],
             chat_id=row[0],
-            updated_at=datetime.fromisoformat(row[4]),
+            updated_at=datetime.fromisoformat(row[5]),
         )
 
     # Hide until needed. Coud potentially offset stored state
@@ -109,10 +112,11 @@ class StateStore:
         self.conn.execute(
             """
             INSERT INTO plans (
-                chat_id, plan, status, reason, updated_at
-            ) VALUES (?, ?, ?, ?, ?)
+                chat_id, plan, blockers, status, reason, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?)
             ON CONFLICT(chat_id) DO UPDATE SET
                 plan = excluded.plan,
+                blockers = excluded.blockers,
                 status = excluded.status,
                 reason = excluded.reason,
                 updated_at = excluded.updated_at
@@ -120,6 +124,7 @@ class StateStore:
             (
                 plan.chat_id,
                 plan.plan,
+                json.dumps(plan.blockers or []),
                 plan.status,
                 plan.reason,
                 plan.updated_at.astimezone(timezone.utc).isoformat(),
