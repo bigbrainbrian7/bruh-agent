@@ -15,7 +15,7 @@ class MessageProcessor:
         self,
         reader: ChatDBReader,
         state_store: StateStore,
-        model: str = "qwen3:8b",
+        model: str,
     ):
         self.reader = reader
         self.state_store = state_store

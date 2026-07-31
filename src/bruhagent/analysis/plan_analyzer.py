@@ -9,9 +9,9 @@ class PlanAnalyzer:
     @staticmethod
     def analyze_chat(
         messages: list[Message],
+        model: str,
         previous_messages: list[Message] | None = None,
         previous_plan: Plan | None = None,
-        model="qwen3:8b",
     ) -> PlanExtraction:
         previous_plan_text = "No previous plan state is saved for this chat."
         if previous_plan is not None:
@@ -44,9 +44,14 @@ If a decision has not been agreed upon, or in other words only has one party mak
 
 the plan field is the key information/main goal of a plan if it has been started. One sentence, brief
 
-the blockers field are any important decision that hasn't been made or key information thats missing. There may be multiple blockers.
+blocker is an unresolved open loop in the conversation: an unanswered proposal, conflicting plan details, or a stated issue with no resolution. Do not infer blockers from information that is simply absent.
 
-the reason field is why you have chosen the status and the representation of the plan the way you did. keep it concise, but do not leave out key information
+Examples:
+- "Let's go at 4?" -> "Confirm whether 4 pm works"
+- "I can do 4." / "I can only do 5." -> "Choose a meeting time"
+- "Let's go at 4." / "Agreed in person." ->[]
+
+the reason field is why you have chosen the status and the representation of the plan the way you did. keep it concise, keep key information that lead to your decision
 
 the confidence field is 0-100 of how confident you are of your selection and reasonings
 

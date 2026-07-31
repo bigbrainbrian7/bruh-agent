@@ -34,7 +34,7 @@ def main() -> int:
 
     scan_parser = subparsers.add_parser("scan", help="Analyze new iMessage conversations")
     scan_parser.add_argument("--chat-db", type=Path, default=DEFAULT_CHAT_DB)
-    scan_parser.add_argument("--model", default="qwen3:8b")
+    scan_parser.add_argument("--model", default="qwen3:1.7b")
     # TODO: Determine good time frame to process new messages if haven't processed in a while
     # essentially jsut the default since-hours value
     scan_parser.add_argument(
@@ -60,11 +60,11 @@ def main() -> int:
         help="Show only this many most recently active chats",
     )
 
-    chats_subparsers.add_parser("tracked")
-    add_chat_parser = chats_subparsers.add_parser("add")
+    chats_subparsers.add_parser("tracked", help="List chats that are analyzed when you scan")
+    add_chat_parser = chats_subparsers.add_parser("add", help="Add a chat to be analyzed when you scan")
     add_chat_parser.add_argument("chat_id")
 
-    remove_chat_parser = chats_subparsers.add_parser("rm")
+    remove_chat_parser = chats_subparsers.add_parser("rm", help="Remove a chat to be analyzed when you scan")
     remove_chat_parser.add_argument("chat_id")
 
 

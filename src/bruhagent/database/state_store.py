@@ -119,7 +119,6 @@ class StateStore:
             """,
             (chat.chat_id, chat.last_processed_message_id)
         )
-        self.conn.commit()
 
     def add_tracked_chat(self, chat_id: str) -> bool:
         with self.conn:
