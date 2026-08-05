@@ -5,10 +5,16 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from textwrap import fill
 
-from openai import APIConnectionError, APIStatusError
-
 from bruhagent.analysis.message_processor import MessageProcessor
+from bruhagent.analysis.plan_analyzer import PlanAnalyzer
 from bruhagent.database import ChatDBReader, StateStore
+from bruhagent.llm import (
+    LLMError,
+    ProviderAuthenticationError,
+    ProviderResponseError,
+    ProviderUnavailableError,
+    create_provider,
+)
 
 
 DEFAULT_CHAT_DB = Path.home() / "Library" / "Messages" / "chat.db"
@@ -34,7 +40,16 @@ def main() -> int:
 
     scan_parser = subparsers.add_parser("scan", help="Analyze new iMessage conversations")
     scan_parser.add_argument("--chat-db", type=Path, default=DEFAULT_CHAT_DB)
-    scan_parser.add_argument("--model", default="qwen3:1.7b")
+    scan_parser.add_argument(
+        "--provider",
+        choices=["ollama", "gemini"],
+        default="ollama",
+        help="Language-model provider (default: ollama)",
+    )
+    scan_parser.add_argument(
+        "--model",
+        help="Model name; defaults to qwen3:1.7b for Ollama, gemini-3.5-flash-lite for Gemini",
+    )
     # TODO: Determine good time frame to process new messages if haven't processed in a while
     # essentially jsut the default since-hours value
     scan_parser.add_argument(
@@ -124,7 +139,9 @@ def main() -> int:
         try:
             reader = ChatDBReader(args.chat_db)
             state_store = StateStore(DEFAULT_STATE_DB)
-            processor = MessageProcessor(reader, state_store, model=args.model)
+            provider = create_provider(args.provider, args.model)
+            analyzer = PlanAnalyzer(provider)
+            processor = MessageProcessor(reader, state_store, analyzer=analyzer)
             since = datetime.now(timezone.utc) - timedelta(hours=args.since_hours)
             plans = processor.process_new_messages(since=since)
 
@@ -166,15 +183,17 @@ def main() -> int:
         except sqlite3.OperationalError as error:
             print(f"Database error: {error}", file=sys.stderr)
             return 1
-        except APIConnectionError:
-            print(
-                f"Cannot connect to Ollama at http://localhost:11434. "
-                f"Start Ollama and ensure model '{args.model}' is installed.",
-                file=sys.stderr,
-            )
+        except ProviderAuthenticationError as error:
+            print(error, file=sys.stderr)
             return 1
-        except APIStatusError as error:
-            print(f"Ollama returned an API error: {error}", file=sys.stderr)
+        except ProviderUnavailableError as error:
+            print(error, file=sys.stderr)
+            return 1
+        except ProviderResponseError as error:
+            print(error, file=sys.stderr)
+            return 1
+        except (LLMError, ValueError) as error:
+            print(error, file=sys.stderr)
             return 1
         finally:
             if reader is not None:

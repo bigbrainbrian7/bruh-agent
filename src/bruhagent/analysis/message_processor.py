@@ -1,5 +1,3 @@
-from collections import defaultdict
-from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 
 from bruhagent.database import ChatDBReader, StateStore
@@ -15,11 +13,11 @@ class MessageProcessor:
         self,
         reader: ChatDBReader,
         state_store: StateStore,
-        model: str,
+        analyzer: PlanAnalyzer,
     ):
         self.reader = reader
         self.state_store = state_store
-        self.model = model
+        self.analyzer = analyzer
 
     def process_new_messages(
         self,
@@ -63,11 +61,10 @@ class MessageProcessor:
                 after_timestamp=first_new_message.timestamp - timedelta(days=3),
                 limit=30
             )
-            plan_extraction = PlanAnalyzer.analyze_chat(
+            plan_extraction = self.analyzer.analyze_chat(
                 messages=chat_messages,
                 previous_messages=previous_messages,
                 previous_plan=previous_plan,
-                model=self.model,
             )
             plan = Plan.from_plan_extraction(
                 plan_extraction=plan_extraction, 

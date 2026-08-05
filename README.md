@@ -5,9 +5,9 @@ bruh reads selected imessage conversations and identifies plans that have a poss
 
 - macos with Messages app (or a sqlite db in the format of apples chat.db)
 - Python 3.12+
-- Ollama running locally
 - Full disk access granted to terminal application running the tool.
     - (this allows the application to read your messages database)
+- Ollama and a downloaded model. Otherwise, an API key for a cloud model (Only gemini is supported as of now)
 
 ## Installation
 
@@ -57,11 +57,29 @@ Scan tracked chats:
 bruh scan
 ```
 
+### Model providers
+
+Ollama is the default local provider:
+
+```bash
+bruh scan --provider ollama --model qwen3:1.7b
+```
+
+Gemini is an optional cloud provider. It defaults to
+`gemini-3.5-flash-lite`, which is available on Gemini's free tier. To set it up, create an API key in [Google AI Studio](https://aistudio.google.com/apikey), export it in the terminal where you run Bruh, then scan:
+
+```bash
+export GEMINI_API_KEY="..."
+bruh scan --provider gemini
+```
+
+Pass `--model <model-name>` to choose another supported Gemini model.  
+Gemini does not require downloading a local model, but its free tier does have rate limits.
+
 Useful scan options:
 
 ```bash
 bruh scan --since-hours 24
-bruh scan --model qwen3:8b
 bruh scan --chat-db /path/to/chat.db
 ```
 
@@ -69,7 +87,12 @@ bruh scan --chat-db /path/to/chat.db
 
 Bruh opens `chat.db` in read-only mode and does not modify Messages data.
 
-Conversation analysis runs through your local Ollama model, so no stealing your data. Bruh stores its own plan state locally at:
+Ollama analysis stays local and offline. Gemini sends the selected conversation
+content to Google's API. Bruh sets `store=False`, so it does not use Gemini's
+server-side interaction history. Review Google's free-tier data-use policy
+before using it with private conversations.
+
+Bruh stores its own plan state locally at:
 
 ```text
 ~/Library/Application Support/Bruh Agent/state.db
@@ -84,6 +107,11 @@ cd bruh-agent
 python3.12 -m venv .venv
 .venv/bin/python -m pip install -e .
 
+# If you want to use a local model
 ollama pull qwen3:1.7b
 .venv/bin/bruh scan
+
+# Or use Gemini without downloading a local model
+export GEMINI_API_KEY="<API_KEY>"
+.venv/bin/bruh scan --provider gemini
 ```

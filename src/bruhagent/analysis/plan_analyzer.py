@@ -1,18 +1,26 @@
-import json
-from ollama import chat
 from bruhagent.models import Message, Plan, PlanExtraction
+from bruhagent.llm import LLMProvider
 
 from .conversation import messages_to_string
 
 class PlanAnalyzer:
+    def __init__(self, provider: LLMProvider):
+        self.provider = provider
 
-    @staticmethod
     def analyze_chat(
+        self,
         messages: list[Message],
-        model: str,
         previous_messages: list[Message] | None = None,
         previous_plan: Plan | None = None,
     ) -> PlanExtraction:
+        # TODO: splice the messages to not reach token limit
+
+        prompt = self._build_prompt(messages, previous_messages=previous_messages, previous_plan=previous_plan)
+
+        return self.provider.analyze_plan(prompt)
+
+
+    def _build_prompt(self, messages: list[Message], previous_messages: list[Message] | None = None, previous_plan: Plan | None = None) -> str:
         previous_plan_text = "No previous plan state is saved for this chat."
         if previous_plan is not None:
             previous_plan_text = f"""
@@ -23,7 +31,7 @@ the conversation messages are the source of truth when they conflict.
 - Status: {previous_plan.status}
 - Reason: {previous_plan.reason}
 """
-        prompt = f"""
+        return f"""
 Analyze this imessage conversation and determine whether there is a plan, or if a plan might come together.
 
 Do not take irrelevant information and rationalize it as a plan possibly coming together
@@ -36,9 +44,9 @@ Categorize it under statuses, and store it under the status field
 - "none": the conversation has no notion of a plan or one coming together
 - "active": A plan has been started, and participants are making progress
 - "stuck": A plan exists, but progress has stalled because an important decision
-  or piece of information is missing. 
+    or piece of information is missing. 
 - "completed": The plan has been finalized. Important logistics have been decided,
-  such as time, location, and participants, or is already scheduled.
+    such as time, location, and participants, or is already scheduled.
 
 If a decision has not been agreed upon, or in other words only has one party making statements, do not consider that particular aspect as settled.
 
@@ -66,25 +74,3 @@ New messages since the last scan. If previous ongoing plan exists, use the new a
 
 {messages_to_string(messages)}
 """
-# TODO: splice the messages to not reach token limit
-
-        response = chat(
-            model=model,
-            messages=[
-                {
-                    "role":"user",
-                    "content":prompt
-                }
-            ],
-            format = PlanExtraction.model_json_schema(),
-            think=False,
-            keep_alive='1m'
-        )
-
-        # print("\nPERFORMANCE STATS")
-        # for field in ["total_duration", "load_duration", "prompt_eval_duration", "eval_duration"]:
-        #     print(f"{field}: {response[field]/1_000_000_000}")
-        # print(f"Messages characters: {len(messages_to_string(messages))}\n")
-
-
-        return PlanExtraction.model_validate_json(response.message.content)

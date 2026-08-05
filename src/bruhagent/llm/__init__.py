@@ -1,5 +1,17 @@
-from .client import client
+from .base import (
+    LLMError,
+    LLMProvider,
+    ProviderAuthenticationError,
+    ProviderResponseError,
+    ProviderUnavailableError,
+)
+from .factory import create_provider
 
 __all__ = [
-    "client",
+    "LLMError",
+    "LLMProvider",
+    "ProviderAuthenticationError",
+    "ProviderResponseError",
+    "ProviderUnavailableError",
+    "create_provider",
 ]
