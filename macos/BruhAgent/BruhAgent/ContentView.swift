@@ -26,10 +26,18 @@ struct ContentView: View {
 }
 
 private struct PlansView: View {
-    @State private var plans: [PlanResult] = []
+    @State private var plans: [Plan] = []
     @State private var status = "Ready to scan your tracked chats."
     @State private var errorMessage: String?
     @State private var isScanning = false
+    @State private var provider: ModelProvider = .ollama
+    @State private var ollamaModels: [OllamaModel] = []
+    @State private var ollamaModel = ""
+    @State private var isLoadingOllamaModels = false
+    @State private var ollamaError: String?
+    @State private var geminiModel = CloudProvider.gemini.defaultModel
+    @State private var geminiAPIKey = ""
+    @State private var isGeminiAPIKeyVisible = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -43,11 +51,85 @@ private struct PlansView: View {
                 Button("Scan chats") {
                     scanChats()
                 }
-                .disabled(isScanning)
+                .disabled(isScanning || isLoadingOllamaModels || (provider == .ollama && ollamaModels.isEmpty))
             }
 
             Text(status)
                 .foregroundStyle(.secondary)
+
+            GroupBox("Model") {
+                VStack(alignment: .leading, spacing: 10) {
+                    Picker("Provider", selection: $provider) {
+                        ForEach(ModelProvider.allCases) { provider in
+                            Text(provider.displayName).tag(provider)
+                        }
+                    }
+                    .pickerStyle(.menu)
+
+                    if provider == .ollama {
+                        if isLoadingOllamaModels {
+                            ProgressView("Checking Ollama…")
+                        } else if let ollamaError {
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text("Ollama unavailable")
+                                    .fontWeight(.semibold)
+                                Text(ollamaError)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                Button("Reload models") {
+                                    Task { await loadOllamaModels() }
+                                }
+                            }
+                        } else if ollamaModels.isEmpty {
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text("No Ollama models installed.")
+                                    .fontWeight(.semibold)
+                                Text("Install a model with `ollama pull <model>`, then reload.")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                Button("Reload models") {
+                                    Task { await loadOllamaModels() }
+                                }
+                            }
+                        } else {
+                            Picker("Ollama model", selection: $ollamaModel) {
+                                ForEach(ollamaModels) { model in
+                                    Text(model.name).tag(model.name)
+                                }
+                            }
+
+                            Button("Reload models") {
+                                Task { await loadOllamaModels() }
+                            }
+                        }
+                    } else {
+                        TextField("Gemini model", text: $geminiModel)
+                            .textFieldStyle(.roundedBorder)
+
+                        HStack(spacing: 8) {
+                            if isGeminiAPIKeyVisible {
+                                TextField(CloudProvider.gemini.apiKeyPlaceholder, text: $geminiAPIKey)
+                            } else {
+                                SecureField(CloudProvider.gemini.apiKeyPlaceholder, text: $geminiAPIKey)
+                            }
+
+                            Button {
+                                isGeminiAPIKeyVisible.toggle()
+                            } label: {
+                                Image(systemName: isGeminiAPIKeyVisible ? "eye.slash" : "eye")
+                            }
+                            .buttonStyle(.borderless)
+                            .help(isGeminiAPIKeyVisible ? "Hide API key" : "Show API key")
+                        }
+                        .textFieldStyle(.roundedBorder)
+
+                        Text("Your key is used only for this scan and is not saved by the app.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .padding(.top, 4)
+            }
 
             if isScanning {
                 ProgressView("Analyzing tracked chats…")
@@ -81,6 +163,10 @@ private struct PlansView: View {
         }
         .padding(24)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .task(id: provider) {
+            guard provider == .ollama else { return }
+            await loadOllamaModels()
+        }
     }
 
     private func scanChats() {
@@ -88,9 +174,17 @@ private struct PlansView: View {
         status = "Scanning tracked chats…"
         errorMessage = nil
 
+        let selectedProvider = provider
+        let selectedModel = selectedModel
+        let apiKey = selectedProvider == .gemini ? geminiAPIKey : nil
+
         DispatchQueue.global(qos: .userInitiated).async {
             do {
-                let results = try BackendClient().scanChats()
+                let results = try BackendClient().scanChats(
+                    provider: selectedProvider,
+                    model: selectedModel,
+                    apiKey: apiKey
+                )
                 DispatchQueue.main.async {
                     plans = results
                     status = "Analyzed \(results.count) chat\(results.count == 1 ? "" : "s")."
@@ -105,15 +199,38 @@ private struct PlansView: View {
             }
         }
     }
+
+    private var selectedModel: String {
+        provider == .ollama ? ollamaModel : geminiModel
+    }
+
+    private func loadOllamaModels() async {
+        isLoadingOllamaModels = true
+        ollamaError = nil
+
+        do {
+            let models = try await OllamaClient().listModels()
+            ollamaModels = models
+
+            if !models.contains(where: { $0.name == ollamaModel }) {
+                ollamaModel = models.first?.name ?? ""
+            }
+        } catch {
+            ollamaModels = []
+            ollamaError = error.localizedDescription
+        }
+
+        isLoadingOllamaModels = false
+    }
 }
 
 private struct PlanCard: View {
-    let plan: PlanResult
+    let plan: Plan
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text(plan.status.uppercased())
+                Text(plan.status.rawValue.uppercased())
                     .font(.caption)
                     .fontWeight(.semibold)
                     .foregroundStyle(statusColor)
@@ -156,16 +273,16 @@ private struct PlanCard: View {
 
     private var statusColor: Color {
         switch plan.status {
-        case "active": .orange
-        case "stuck": .red
-        case "completed": .green
+        case .active: .orange
+        case .stuck: .red
+        case .completed: .green
         default: .secondary
         }
     }
 }
 
 private struct ChatsView: View {
-    @State private var chats: [ChatSummary] = []
+    @State private var chats: [Chat] = []
     @State private var selectedChatIDs: Set<String> = []
     @State private var savedChatIDs: Set<String> = []
     @State private var errorMessage: String?

@@ -118,7 +118,19 @@ def main() -> int:
                     reader = ChatDBReader(DEFAULT_CHAT_DB)
                     chat_ids = reader.get_chat_ids(limit=args.limit)
                     if args.json:
-                        print(json.dumps({"chats": [{"chat_id": chat_id} for chat_id in chat_ids]}))
+                        print(
+                            json.dumps(
+                                {
+                                    "chats": [
+                                        {
+                                            "chat_id": chat_id,
+                                            "last_processed_message_id": 0,
+                                        }
+                                        for chat_id in chat_ids
+                                    ]
+                                }
+                            )
+                        )
                     else:
                         print("most recent chat_ids")
                         for chat_id in chat_ids:
@@ -198,6 +210,7 @@ def main() -> int:
                                     "plan": plan.plan,
                                     "blockers": plan.blockers,
                                     "reason": plan.reason,
+                                    "confidence": plan.confidence,
                                     "updated_at": (
                                         plan.updated_at.isoformat()
                                         if plan.updated_at is not None
