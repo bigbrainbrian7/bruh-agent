@@ -25,6 +25,7 @@ struct CloudProvider: Identifiable {
     let displayName: String
     let defaultModel: String
     let apiKeyEnvironmentVariable: String
+    let apiKeyAccount: String
     let apiKeyPlaceholder: String
 
     static let gemini = CloudProvider(
@@ -32,6 +33,7 @@ struct CloudProvider: Identifiable {
         displayName: "Gemini",
         defaultModel: "gemini-3.5-flash-lite",
         apiKeyEnvironmentVariable: "GEMINI_API_KEY",
+        apiKeyAccount: "gemini-api-key",
         apiKeyPlaceholder: "Paste your Gemini API key"
     )
 }
@@ -138,7 +140,6 @@ struct BackendClient {
         throw BackendError.executableNotFound
     }
 
-    # not validated after gpted. just gotta hope it works
     private func makeDecoder() -> JSONDecoder {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .custom { decoder in

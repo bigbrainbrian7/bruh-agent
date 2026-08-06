@@ -26,6 +26,8 @@ struct ContentView: View {
 }
 
 private struct PlansView: View {
+    private let keychain = KeychainStore()
+
     @State private var plans: [Plan] = []
     @State private var status = "Ready to scan your tracked chats."
     @State private var errorMessage: String?
@@ -38,6 +40,8 @@ private struct PlansView: View {
     @State private var geminiModel = CloudProvider.gemini.defaultModel
     @State private var geminiAPIKey = ""
     @State private var isGeminiAPIKeyVisible = false
+    @State private var hasSavedGeminiAPIKey = false
+    @State private var keychainError: String?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -123,9 +127,28 @@ private struct PlansView: View {
                         }
                         .textFieldStyle(.roundedBorder)
 
-                        Text("Your key is used only for this scan and is not saved by the app.")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                        HStack {
+                            Button("Save API key") {
+                                saveGeminiAPIKey()
+                            }
+                            .disabled(geminiAPIKey.isEmpty)
+
+                            if hasSavedGeminiAPIKey {
+                                Text("API key saved in Keychain")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+
+                                Button("Remove saved key", role: .destructive) {
+                                    removeSavedGeminiAPIKey()
+                                }
+                            }
+                        }
+
+                        if let keychainError {
+                            Text(keychainError)
+                                .font(.caption)
+                                .foregroundStyle(.red)
+                        }
                     }
                 }
                 .padding(.top, 4)
@@ -167,6 +190,9 @@ private struct PlansView: View {
             guard provider == .ollama else { return }
             await loadOllamaModels()
         }
+        .task {
+            refreshGeminiAPIKeyStatus()
+        }
     }
 
     private func scanChats() {
@@ -176,7 +202,16 @@ private struct PlansView: View {
 
         let selectedProvider = provider
         let selectedModel = selectedModel
-        let apiKey = selectedProvider == .gemini ? geminiAPIKey : nil
+        let apiKey: String?
+
+        do {
+            apiKey = try geminiAPIKeyForScan(provider: selectedProvider)
+        } catch {
+            status = error.localizedDescription
+            errorMessage = error.localizedDescription
+            isScanning = false
+            return
+        }
 
         DispatchQueue.global(qos: .userInitiated).async {
             do {
@@ -221,6 +256,51 @@ private struct PlansView: View {
         }
 
         isLoadingOllamaModels = false
+    }
+
+    private func saveGeminiAPIKey() {
+        do {
+            try keychain.save(geminiAPIKey, for: CloudProvider.gemini.apiKeyAccount)
+            geminiAPIKey = ""
+            hasSavedGeminiAPIKey = true
+            keychainError = nil
+        } catch {
+            keychainError = error.localizedDescription
+        }
+    }
+
+    private func removeSavedGeminiAPIKey() {
+        do {
+            try keychain.delete(CloudProvider.gemini.apiKeyAccount)
+            geminiAPIKey = ""
+            hasSavedGeminiAPIKey = false
+            keychainError = nil
+        } catch {
+            keychainError = error.localizedDescription
+        }
+    }
+
+    private func refreshGeminiAPIKeyStatus() {
+        do {
+            hasSavedGeminiAPIKey = try keychain.contains(CloudProvider.gemini.apiKeyAccount)
+        } catch {
+            keychainError = error.localizedDescription
+        }
+    }
+
+    private func geminiAPIKeyForScan(provider: ModelProvider) throws -> String? {
+        guard provider == .gemini else { return nil }
+
+        if !geminiAPIKey.isEmpty {
+            try keychain.save(geminiAPIKey, for: CloudProvider.gemini.apiKeyAccount)
+            geminiAPIKey = ""
+            hasSavedGeminiAPIKey = true
+        }
+
+        guard let apiKey = try keychain.read(for: CloudProvider.gemini.apiKeyAccount) else {
+            throw KeychainError.missingValue
+        }
+        return apiKey
     }
 }
 
