@@ -1,6 +1,8 @@
 import argparse
+import json
 import sqlite3
 import sys
+from contextlib import nullcontext, redirect_stdout
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from textwrap import fill
@@ -58,6 +60,11 @@ def main() -> int:
         default=12,
         help="Initial scan window; ignored after the first successful scan (default: 12)",
     )
+    scan_parser.add_argument(
+        "--json",
+        action="store_true",
+        help="Print scan results as JSON",
+    )
 
     chats_parser = subparsers.add_parser("chats", help="Manage tracked chats")
     chats_subparsers = chats_parser.add_subparsers(
@@ -74,8 +81,21 @@ def main() -> int:
         default=10,
         help="Show only this many most recently active chats",
     )
+    list_parser.add_argument(
+        "--json",
+        action="store_true",
+        help="Print chats as JSON",
+    )
 
-    chats_subparsers.add_parser("tracked", help="List chats that are analyzed when you scan")
+    tracked_parser = chats_subparsers.add_parser(
+        "tracked",
+        help="List chats that are analyzed when you scan",
+    )
+    tracked_parser.add_argument(
+        "--json",
+        action="store_true",
+        help="Print tracked chats as JSON",
+    )
     add_chat_parser = chats_subparsers.add_parser("add", help="Add a chat to be analyzed when you scan")
     add_chat_parser.add_argument("chat_id")
 
@@ -96,16 +116,36 @@ def main() -> int:
                 reader = None
                 try:
                     reader = ChatDBReader(DEFAULT_CHAT_DB)
-                    print("most recent chat_ids")
-                    for chat_id in reader.get_chat_ids(limit=args.limit):
-                        print(chat_id)
+                    chat_ids = reader.get_chat_ids(limit=args.limit)
+                    if args.json:
+                        print(json.dumps({"chats": [{"chat_id": chat_id} for chat_id in chat_ids]}))
+                    else:
+                        print("most recent chat_ids")
+                        for chat_id in chat_ids:
+                            print(chat_id)
                 finally:
                     if reader is not None:
                         reader.close()
             elif args.chats_command == "tracked":
                 chats = state_store.get_tracked_chats()
 
-                if not chats:
+                if args.json:
+                    print(
+                        json.dumps(
+                            {
+                                "chats": [
+                                    {
+                                        "chat_id": chat.chat_id,
+                                        "last_processed_message_id": (
+                                            chat.last_processed_message_id
+                                        ),
+                                    }
+                                    for chat in chats
+                                ]
+                            }
+                        )
+                    )
+                elif not chats:
                     print("No chats are being analyzed.")
                 else:
                     for chat in chats:
@@ -143,7 +183,33 @@ def main() -> int:
             analyzer = PlanAnalyzer(provider)
             processor = MessageProcessor(reader, state_store, analyzer=analyzer)
             since = datetime.now(timezone.utc) - timedelta(hours=args.since_hours)
-            plans = processor.process_new_messages(since=since)
+            output = redirect_stdout(sys.stderr) if args.json else nullcontext()
+            with output:
+                plans = processor.process_new_messages(since=since)
+
+            if args.json:
+                print(
+                    json.dumps(
+                        {
+                            "plans": [
+                                {
+                                    "chat_id": plan.chat_id,
+                                    "status": plan.status,
+                                    "plan": plan.plan,
+                                    "blockers": plan.blockers,
+                                    "reason": plan.reason,
+                                    "updated_at": (
+                                        plan.updated_at.isoformat()
+                                        if plan.updated_at is not None
+                                        else None
+                                    ),
+                                }
+                                for plan in plans.values()
+                            ]
+                        }
+                    )
+                )
+                return 0
 
             if not plans:
                 print("No new messages to analyze.")

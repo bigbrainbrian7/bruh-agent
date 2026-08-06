@@ -5,8 +5,6 @@ bruh reads selected imessage conversations and identifies plans that have a poss
 
 - macos with Messages app (or a sqlite db in the format of apples chat.db)
 - Python 3.12+
-- Full disk access granted to terminal application running the tool.
-    - (this allows the application to read your messages database)
 - Ollama and a downloaded model. Otherwise, an API key for a cloud model (Only gemini is supported as of now)
 
 ## Installation
@@ -23,7 +21,16 @@ Install an Ollama model
 ollama pull qwen3:1.7b
 ```
 
-Give terminal application full disk access: https://support.apple.com/en-kg/guide/mac-help/mchlccb25729/mac
+### Full Disk Access
+
+Bruh reads the Messages database in read-only mode, which macOS protects with
+Full Disk Access.
+
+- When using the CLI, grant Full Disk Access to the terminal app running `bruh`.
+- When using the built macOS app, grant Full Disk Access to `Bruh Agent.app`
+  itself. During Xcode development, this is the debug build under Derived Data.
+
+See [Apple's instructions](https://support.apple.com/en-kg/guide/mac-help/mchlccb25729/mac).
 
 ## Usage
 
@@ -115,3 +122,6 @@ ollama pull qwen3:1.7b
 export GEMINI_API_KEY="<API_KEY>"
 .venv/bin/bruh scan --provider gemini
 ```
+
+The native macOS app is in [`macos/BruhAgent`](macos/BruhAgent/). Its
+development and backend-bundling notes are in that folder's README.
