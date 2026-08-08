@@ -9,6 +9,10 @@ import Foundation
 import SwiftUI
 
 struct ContentView: View {
+    @AppStorage("hasCompletedPrivacyOnboarding")
+    private var hasCompletedPrivacyOnboarding = false
+    @State private var showsPrivacyOnboarding = false
+
     var body: some View {
         TabView {
             PlansView()
@@ -22,6 +26,16 @@ struct ContentView: View {
                 }
         }
         .frame(minWidth: 560, minHeight: 420)
+        .task {
+            showsPrivacyOnboarding = !hasCompletedPrivacyOnboarding
+        }
+        .sheet(isPresented: $showsPrivacyOnboarding) {
+            PrivacyOnboardingView {
+                hasCompletedPrivacyOnboarding = true
+                showsPrivacyOnboarding = false
+            }
+            .interactiveDismissDisabled()
+        }
     }
 }
 

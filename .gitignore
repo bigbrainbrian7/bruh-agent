@@ -16,7 +16,12 @@ __pycache__/
 .coverage
 build/
 dist/
+*.xcarchive
+*.dmg
+macos/BruhAgent/BruhAgent/Resources/backend/
 
 .vscode/
 
 xcuserdata/
+
+.DS_Store

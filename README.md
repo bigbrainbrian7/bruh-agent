@@ -1,38 +1,65 @@
 # bruh
 bruh reads selected imessage conversations and identifies plans that have a possibility of coming together, as well as their status and any obstacles to making them happen.
 
-## Requirements
+## Choose a model
 
-- macos with Messages app (or a sqlite db in the format of apples chat.db)
+Bruh can use either provider:
+
+- **Ollama (local):** Install [Ollama](https://ollama.com/) and pull a model,
+  such as `ollama pull qwen3:8b`. Messages stay on your Mac.
+- **Gemini (cloud):** Create a Gemini API key in [Google AI Studio](https://aistudio.google.com/apikey).
+  Gemini sends analyzed conversation content to Google's API and does not
+  require a local model download.
+
+## Use the macOS app
+
+The macOS app is the easiest way to use Bruh. It includes the Python backend,
+so Python and the CLI do not need to be installed separately.
+
+1. Download `BruhAgent.dmg` from the [latest GitHub Release](https://github.com/bigbrainbrian7/bruh-agent/releases/latest).
+2. Open the DMG and drag **Bruh Agent** to Applications.
+3. Open Bruh Agent. On first launch, follow the in-app instructions to grant
+   it **Full Disk Access** so it can read your local Messages database.
+4. In the **Chats** tab, select chats to track. In the **Plans** tab, choose a
+   model and scan your tracked chats.
+
+Choose Ollama or Gemini in the **Plans** tab. For Gemini, paste the API key you
+created above; the app stores it in macOS Keychain.
+
+(Cloud models tend to work **SIGNIFICANTLY** better than local ones)
+
+## Use the command-line tool
+
+### Requirements
+
+- macOS with the Messages app, or a SQLite database compatible with Apple's `chat.db`
 - Python 3.12+
-- Ollama and a downloaded model. Otherwise, an API key for a cloud model (Only gemini is supported as of now)
+- Either Ollama with a downloaded model, or a Gemini API key
 
-## Installation
+### Install
 
 ```bash
 brew install pipx
 pipx ensurepath
-pipx install "git+https://github.com/bigbrainbrian7/bruh-agent.git@v0.1.1"
+pipx install "git+https://github.com/bigbrainbrian7/bruh-agent.git@v0.2.0"
 ```
 
-Install an Ollama model
+Install an Ollama model:
 
 ```bash
-ollama pull qwen3:1.7b
+ollama pull qwen3:8b
 ```
 
-### Full Disk Access
+### Grant Full Disk Access
 
 Bruh reads the Messages database in read-only mode, which macOS protects with
 Full Disk Access.
 
-- When using the CLI, grant Full Disk Access to the terminal app running `bruh`.
-- When using the built macOS app, grant Full Disk Access to `Bruh Agent.app`
-  itself. During Xcode development, this is the debug build under Derived Data.
+- Grant Full Disk Access to the terminal app running `bruh`.
 
 See [Apple's instructions](https://support.apple.com/en-kg/guide/mac-help/mchlccb25729/mac).
 
-## Usage
+### Usage
 
 List recently active chats:
 
@@ -73,7 +100,8 @@ bruh scan --provider ollama --model qwen3:1.7b
 ```
 
 Gemini is an optional cloud provider. It defaults to
-`gemini-3.5-flash-lite`, which is available on Gemini's free tier. To set it up, create an API key in [Google AI Studio](https://aistudio.google.com/apikey), export it in the terminal where you run Bruh, then scan:
+`gemini-3.5-flash-lite`, which is available on Gemini's free tier. Export the
+API key you created above in the terminal where you run Bruh, then scan:
 
 ```bash
 export GEMINI_API_KEY="..."
@@ -105,6 +133,9 @@ Bruh stores its own plan state locally at:
 ~/Library/Application Support/Bruh Agent/state.db
 ```
 
+The macOS app stores a Gemini API key in macOS Keychain. The CLI instead reads
+`GEMINI_API_KEY` from the terminal environment.
+
 ## Development
 
 ```bash
@@ -124,4 +155,4 @@ export GEMINI_API_KEY="<API_KEY>"
 ```
 
 The native macOS app is in [`macos/BruhAgent`](macos/BruhAgent/). Its
-development and backend-bundling notes are in that folder's README.
+development and release-build instructions are in that folder's README.
