@@ -3,7 +3,7 @@ import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
 
-from ..models import Plan, Chat
+from ..models import Chat, Plan, ToolCall
 
 
 class StateStore:
@@ -21,6 +21,7 @@ class StateStore:
                 blockers TEXT NOT NULL DEFAULT '[]',
                 status TEXT NOT NULL,
                 reason TEXT,
+                tool_calls TEXT NOT NULL DEFAULT '[]',
                 updated_at TEXT NOT NULL
             )
             """
@@ -38,7 +39,7 @@ class StateStore:
     def get_plan(self, chat_id: str) -> Plan | None:
         row = self.conn.execute(
             """
-            SELECT chat_id, plan, blockers, status, reason, updated_at
+            SELECT chat_id, plan, blockers, status, reason, tool_calls, updated_at
             FROM plans
             WHERE chat_id = ?
             """,
@@ -53,7 +54,8 @@ class StateStore:
             status=row[3],
             reason=row[4],
             chat_id=row[0],
-            updated_at=datetime.fromisoformat(row[5]),
+            tool_calls=[ToolCall.model_validate(item) for item in json.loads(row[5])],
+            updated_at=datetime.fromisoformat(row[6]),
         )
 
     # Hide until needed. Coud potentially offset stored state
@@ -82,13 +84,14 @@ class StateStore:
         self.conn.execute(
             """
             INSERT INTO plans (
-                chat_id, plan, blockers, status, reason, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?)
+                chat_id, plan, blockers, status, reason, tool_calls, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(chat_id) DO UPDATE SET
                 plan = excluded.plan,
                 blockers = excluded.blockers,
                 status = excluded.status,
                 reason = excluded.reason,
+                tool_calls = excluded.tool_calls,
                 updated_at = excluded.updated_at
             """,
             (
@@ -97,6 +100,7 @@ class StateStore:
                 json.dumps(plan.blockers or []),
                 plan.status,
                 plan.reason,
+                json.dumps([tool_call.model_dump(mode="json") for tool_call in plan.tool_calls]),
                 plan.updated_at.astimezone(timezone.utc).isoformat(),
             ),
         )

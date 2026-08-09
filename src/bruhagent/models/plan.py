@@ -1,7 +1,9 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Literal
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+
+from .tool import ToolCall
 
 PlanStatus = Literal["active", "stuck", "completed", "none"]
 
@@ -13,6 +15,7 @@ class PlanExtraction(BaseModel):
     blockers: list[str] | None
     reason: str
     confidence: float = 0.0
+    tool_calls: list[ToolCall] = Field(default_factory=list)
 
 @dataclass(slots=True)
 class Plan:
@@ -24,6 +27,7 @@ class Plan:
     reason: str
     chat_id: str
     confidence: float = 0.0
+    tool_calls: list[ToolCall] = field(default_factory=list)
     updated_at: datetime | None = None
 
     @classmethod
@@ -39,6 +43,7 @@ class Plan:
             blockers=plan_extraction.blockers,
             reason=plan_extraction.reason,
             confidence=plan_extraction.confidence,
+            tool_calls=plan_extraction.tool_calls,
             chat_id=chat_id,
             updated_at=updated_at
         ) 

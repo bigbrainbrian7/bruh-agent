@@ -211,6 +211,10 @@ def main() -> int:
                                     "blockers": plan.blockers,
                                     "reason": plan.reason,
                                     "confidence": plan.confidence,
+                                    "tool_calls": [
+                                        tool_call.model_dump(mode="json")
+                                        for tool_call in plan.tool_calls
+                                    ],
                                     "updated_at": (
                                         plan.updated_at.isoformat()
                                         if plan.updated_at is not None
