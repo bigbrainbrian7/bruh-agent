@@ -2,7 +2,7 @@ import sqlite3
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from ..models import Message
+from ..models import Chat, Message
 
 
 APPLE_EPOCH = datetime(2001, 1, 1, tzinfo=timezone.utc)
@@ -129,18 +129,25 @@ class ChatDBReader:
             text=body,
         )
     
-    def get_chat_ids(
+    def get_chats(
             self, 
             after_message_id: int | None = None,
             limit: int | None = None,
-        ) -> list[str]:
+        ) -> list[Chat]:
         query = """
-        SELECT chat.guid
+        SELECT
+            chat.guid,
+            chat.display_name,
+            GROUP_CONCAT(handle.id, char(31)) AS participant_handles
         FROM chat
         JOIN chat_message_join
             ON chat.ROWID = chat_message_join.chat_id
         JOIN message
             ON message.ROWID = chat_message_join.message_id
+        LEFT JOIN chat_handle_join
+            ON chat.ROWID = chat_handle_join.chat_id
+        LEFT JOIN handle
+            ON handle.ROWID = chat_handle_join.handle_id
         """
         params = []
 
@@ -148,7 +155,7 @@ class ChatDBReader:
             query += " WHERE message.ROWID > ?"
             params.append(after_message_id)
 
-        query += " GROUP BY chat.guid ORDER BY MAX(message.ROWID) DESC"
+        query += " GROUP BY chat.ROWID ORDER BY MAX(message.ROWID) DESC"
 
         if limit is not None:
             query += " LIMIT ?"
@@ -157,7 +164,25 @@ class ChatDBReader:
         rows = self.conn.execute(query, params).fetchall()
         
 
-        return [row[0] for row in rows]
+        chats = []
+        for row in rows:
+            handles = list(dict.fromkeys((row[2] or "").split(chr(31))))
+            chats.append(
+                Chat(
+                    chat_id=row[0],
+                    last_processed_message_id=0,
+                    display_name=row[1],
+                    participant_handles=[handle for handle in handles if handle],
+                )
+            )
+        return chats
+
+    def get_chat_ids(
+        self,
+        after_message_id: int | None = None,
+        limit: int | None = None,
+    ) -> list[str]:
+        return [chat.chat_id for chat in self.get_chats(after_message_id, limit)]
     
     def close(self) -> None:
         self.conn.close()

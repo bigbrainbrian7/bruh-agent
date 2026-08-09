@@ -447,8 +447,18 @@ private struct ChatsView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 List(chats) { chat in
-                    Toggle(chat.chatID, isOn: selectionBinding(for: chat.chatID))
-                        .toggleStyle(.checkbox)
+                    Toggle(isOn: selectionBinding(for: chat.chatID)) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            let title = chat.displayName ?? chat.participantHandles.joined(separator: ", ")
+                            Text(title.isEmpty ? chat.chatID : title)
+                            if chat.displayName != nil, !chat.participantHandles.isEmpty {
+                                Text(chat.participantHandles.joined(separator: ", "))
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                    .toggleStyle(.checkbox)
                 }
             }
 
@@ -464,7 +474,7 @@ private struct ChatsView: View {
 
             HStack {
                 Button("Reload") {
-                    loadChats()
+                    Task { await loadChats() }
                 }
 
                 Button("Save selection") {
@@ -481,7 +491,7 @@ private struct ChatsView: View {
         }
         .padding(24)
         .task {
-            loadChats()
+            await loadChats()
         }
     }
 
@@ -498,13 +508,14 @@ private struct ChatsView: View {
         )
     }
 
-    private func loadChats() {
+    private func loadChats() async {
         isLoading = true
         errorMessage = nil
 
         do {
             let client = BackendClient()
-            chats = try client.listChats(limit: 10)
+            let availableChats = try client.listChats(limit: 10)
+            chats = await ChatDisplayNameResolver().resolve(availableChats)
             savedChatIDs = Set(try client.trackedChats().map(\.chatID))
             selectedChatIDs = savedChatIDs
         } catch {
