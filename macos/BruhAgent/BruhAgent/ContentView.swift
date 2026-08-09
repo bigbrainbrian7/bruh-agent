@@ -5,6 +5,7 @@
 //  Created by Brian Yu on 8/5/26.
 //
 
+import AppKit
 import Foundation
 import SwiftUI
 
@@ -56,6 +57,8 @@ private struct PlansView: View {
     @State private var isGeminiAPIKeyVisible = false
     @State private var hasSavedGeminiAPIKey = false
     @State private var keychainError: String?
+    @State private var calendarDraft: CalendarEventDraft?
+    @State private var executedToolCallIDs: Set<String> = []
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -192,7 +195,11 @@ private struct PlansView: View {
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 12) {
                         ForEach(plans) { plan in
-                            PlanCard(plan: plan)
+                            PlanCard(
+                                plan: plan,
+                                executedToolCallIDs: executedToolCallIDs,
+                                onRunTool: prepareTool
+                            )
                         }
                     }
                 }
@@ -206,6 +213,12 @@ private struct PlansView: View {
         }
         .task {
             refreshGeminiAPIKeyStatus()
+        }
+        .sheet(item: $calendarDraft) { draft in
+            CreateCalendarEventSheet(draft: draft) { result in
+                executedToolCallIDs.insert(result.toolCallID)
+                status = result.summary
+            }
         }
     }
 
@@ -316,10 +329,23 @@ private struct PlansView: View {
         }
         return apiKey
     }
+
+    private func prepareTool(_ call: ToolCall) {
+        do {
+            switch call {
+            case .createCalendarEvent:
+                calendarDraft = try ToolRegistry().calendarDraft(for: call)
+            }
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
 }
 
 private struct PlanCard: View {
     let plan: Plan
+    let executedToolCallIDs: Set<String>
+    let onRunTool: (ToolCall) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -337,6 +363,14 @@ private struct PlanCard: View {
                 Text(plan.chatID)
                     .font(.caption)
                     .foregroundStyle(.secondary)
+
+                Button {
+                    copyPlan()
+                } label: {
+                    Image(systemName: "doc.on.doc")
+                }
+                .buttonStyle(.borderless)
+                .help("Copy plan summary")
             }
 
             Text(plan.plan ?? "No plan identified.")
@@ -359,10 +393,23 @@ private struct PlanCard: View {
             Text(plan.reason)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
+
+            ForEach(plan.toolCalls) { toolCall in
+                switch toolCall {
+                case .createCalendarEvent:
+                    if !executedToolCallIDs.contains(toolCall.id) {
+                        Button("Add to Calendar") {
+                            onRunTool(toolCall)
+                        }
+                        .buttonStyle(.bordered)
+                    }
+                }
+            }
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(.quaternary, in: RoundedRectangle(cornerRadius: 12))
+        .textSelection(.enabled)
     }
 
     private var statusColor: Color {
@@ -372,6 +419,24 @@ private struct PlanCard: View {
         case .completed: .green
         default: .secondary
         }
+    }
+
+    private func copyPlan() {
+        var lines = [
+            "Status: \(plan.status.rawValue.capitalized)",
+            "Plan: \(plan.plan ?? "No plan identified.")",
+        ]
+
+        if let blockers = plan.blockers, !blockers.isEmpty {
+            lines.append("Blockers:")
+            lines.append(contentsOf: blockers.map { "- \($0)" })
+        }
+
+        lines.append("Reason: \(plan.reason)")
+
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        pasteboard.setString(lines.joined(separator: "\n"), forType: .string)
     }
 }
 
@@ -396,8 +461,18 @@ private struct ChatsView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 List(chats) { chat in
-                    Toggle(chat.chatID, isOn: selectionBinding(for: chat.chatID))
-                        .toggleStyle(.checkbox)
+                    Toggle(isOn: selectionBinding(for: chat.chatID)) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            let title = chat.displayName ?? chat.participantHandles.joined(separator: ", ")
+                            Text(title.isEmpty ? chat.chatID : title)
+                            if chat.displayName != nil, !chat.participantHandles.isEmpty {
+                                Text(chat.participantHandles.joined(separator: ", "))
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                    .toggleStyle(.checkbox)
                 }
             }
 
@@ -413,7 +488,7 @@ private struct ChatsView: View {
 
             HStack {
                 Button("Reload") {
-                    loadChats()
+                    Task { await loadChats() }
                 }
 
                 Button("Save selection") {
@@ -430,7 +505,7 @@ private struct ChatsView: View {
         }
         .padding(24)
         .task {
-            loadChats()
+            await loadChats()
         }
     }
 
@@ -447,13 +522,14 @@ private struct ChatsView: View {
         )
     }
 
-    private func loadChats() {
+    private func loadChats() async {
         isLoading = true
         errorMessage = nil
 
         do {
             let client = BackendClient()
-            chats = try client.listChats(limit: 10)
+            let availableChats = try client.listChats(limit: 10)
+            chats = await ChatDisplayNameResolver().resolve(availableChats)
             savedChatIDs = Set(try client.trackedChats().map(\.chatID))
             selectedChatIDs = savedChatIDs
         } catch {

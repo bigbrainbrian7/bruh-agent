@@ -116,25 +116,27 @@ def main() -> int:
                 reader = None
                 try:
                     reader = ChatDBReader(DEFAULT_CHAT_DB)
-                    chat_ids = reader.get_chat_ids(limit=args.limit)
+                    chats = reader.get_chats(limit=args.limit)
                     if args.json:
                         print(
                             json.dumps(
                                 {
                                     "chats": [
                                         {
-                                            "chat_id": chat_id,
-                                            "last_processed_message_id": 0,
+                                            "chat_id": chat.chat_id,
+                                            "last_processed_message_id": chat.last_processed_message_id,
+                                            "display_name": chat.display_name,
+                                            "participant_handles": chat.participant_handles,
                                         }
-                                        for chat_id in chat_ids
+                                        for chat in chats
                                     ]
                                 }
                             )
                         )
                     else:
-                        print("most recent chat_ids")
-                        for chat_id in chat_ids:
-                            print(chat_id)
+                        print("most recent chats")
+                        for chat in chats:
+                            print(chat.display_name or chat.chat_id)
                 finally:
                     if reader is not None:
                         reader.close()
@@ -151,6 +153,8 @@ def main() -> int:
                                         "last_processed_message_id": (
                                             chat.last_processed_message_id
                                         ),
+                                        "display_name": chat.display_name,
+                                        "participant_handles": chat.participant_handles,
                                     }
                                     for chat in chats
                                 ]
@@ -211,6 +215,10 @@ def main() -> int:
                                     "blockers": plan.blockers,
                                     "reason": plan.reason,
                                     "confidence": plan.confidence,
+                                    "tool_calls": [
+                                        tool_call.model_dump(mode="json")
+                                        for tool_call in plan.tool_calls
+                                    ],
                                     "updated_at": (
                                         plan.updated_at.isoformat()
                                         if plan.updated_at is not None

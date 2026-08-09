@@ -7,21 +7,28 @@ enum PlanStatus: String, Codable, Sendable {
     case none
 }
 
-struct PlanExtraction: Codable, Sendable {
+struct PlanExtraction: Decodable, Sendable {
     let status: PlanStatus
     let plan: String?
     let blockers: [String]?
     let reason: String
     let confidence: Double
+    let toolCalls: [ToolCall]
+
+    private enum CodingKeys: String, CodingKey {
+        case status, plan, blockers, reason, confidence
+        case toolCalls = "tool_calls"
+    }
 }
 
-struct Plan: Codable, Identifiable, Sendable {
+struct Plan: Decodable, Identifiable, Sendable {
     let status: PlanStatus
     let plan: String?
     let blockers: [String]?
     let reason: String
     let chatID: String
     let confidence: Double
+    let toolCalls: [ToolCall]
     let updatedAt: Date?
 
     var id: String { chatID }
@@ -29,6 +36,7 @@ struct Plan: Codable, Identifiable, Sendable {
     private enum CodingKeys: String, CodingKey {
         case status, plan, blockers, reason, confidence
         case chatID = "chat_id"
+        case toolCalls = "tool_calls"
         case updatedAt = "updated_at"
     }
 }

@@ -71,7 +71,7 @@ struct BackendClient {
             arguments: ["scan", "--json", "--provider", provider.rawValue, "--model", model],
             environment: environment
         )
-        return try makeDecoder().decode(ScanResponse.self, from: output).plans
+        return try BackendJSONDecoder.make().decode(ScanResponse.self, from: output).plans
     }
 
     func listChats(limit: Int) throws -> [Chat] {
@@ -140,7 +140,10 @@ struct BackendClient {
         throw BackendError.executableNotFound
     }
 
-    private func makeDecoder() -> JSONDecoder {
+}
+
+enum BackendJSONDecoder {
+    static func make() -> JSONDecoder {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .custom { decoder in
             let container = try decoder.singleValueContainer()

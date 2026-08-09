@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from bruhagent.models import Message, Plan, PlanExtraction
 from bruhagent.llm import LLMProvider
 
@@ -21,6 +23,7 @@ class PlanAnalyzer:
 
 
     def _build_prompt(self, messages: list[Message], previous_messages: list[Message] | None = None, previous_plan: Plan | None = None) -> str:
+        local_time = datetime.now().astimezone().isoformat()
         previous_plan_text = "No previous plan state is saved for this chat."
         if previous_plan is not None:
             previous_plan_text = f"""
@@ -50,6 +53,19 @@ Categorize it under statuses, and store it under the status field
 
 If a decision has not been agreed upon, or in other words only has one party making statements, do not consider that particular aspect as settled.
 
+Messages are informal and may be fragmented. A plan is often spread across several
+short messages, with unrelated jokes or side topics between the proposal and its
+reply. Track open conversational threads across the whole exchange rather than
+requiring adjacent messages or a formal recap of the plan. A short affirmative
+reply, a time, a place, or another logistical detail can answer an earlier proposal
+when it is a plausible continuation of that thread, even if it appears later.
+
+Do not require every participant, purpose, and detail to be explicitly restated
+before recognizing a plan. A concrete shared activity plus implicit or explicit
+engagement is enough for an active plan. Use "none" only when there is no plausible
+shared activity being coordinated anywhere in the conversation. Do not join messages
+into a plan when their meaning clearly belongs to different conversational threads.
+
 the plan field is the key information/main goal of a plan if it has been started. One sentence, brief
 
 blocker is an unresolved open loop in the conversation: an unanswered proposal, conflicting plan details, or a stated issue with no resolution. Do not infer blockers from information that is simply absent.
@@ -62,6 +78,15 @@ Examples:
 the reason field is why you have chosen the status and the representation of the plan the way you did. keep it concise, keep key information that lead to your decision
 
 the confidence field is 0-100 of how confident you are of your selection and reasonings
+
+tool_calls are optional native actions the app may offer to the user. 
+
+Only propose create_calendar_event when the conversation clearly agrees on a social event with a specific date and time. 
+Use an exact ISO-8601 start_time and end_time with the
+timezone. 
+Never guess a date, time, duration, title, or location, but still make an event if at least the time is known, indicating one identifier in the title (fall back to the chat name if none).
+Use "calendar-event" as the tool call id.
+The current local time is {local_time}.
 
 Previous plan state:
 
